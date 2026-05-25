@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Darkness, lighting and crime — New York City and four comparison cities</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#050507; --panel:#101015; --line:#26262e; --text:#e7e7ec; --muted:#8a8a96;
+    --chartreuse:#d6ff3a; --magenta:#e7466d; --cyan:#3fa9b9;
+    --sans:'Helvetica Neue',Arial,sans-serif; --serif:Georgia,'Times New Roman',serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;}
+  #app{display:flex;flex-direction:column;height:100vh;}
+
+  header{flex:0 0 auto;padding:11px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;background:var(--panel);}
+  .h-text{min-width:0;flex:1;}
+  .kicker{font-size:9.5px;font-weight:900;letter-spacing:0.14em;text-transform:uppercase;color:var(--chartreuse);}
+  .kicker .sep{color:rgba(255,255,255,0.4);font-weight:400;margin:0 7px;} .kicker .k2{color:rgba(255,255,255,0.82);font-weight:700;}
+  h1{font-size:17px;font-weight:800;letter-spacing:-0.01em;margin:3px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  h1 b{color:var(--chartreuse);font-weight:800;}
+  .toggle{flex:0 0 auto;display:flex;border:1px solid var(--line);}
+  .toggle button{background:rgba(255,255,255,0.03);color:var(--muted);border:0;padding:9px 14px;font-family:var(--sans);font-size:11px;font-weight:800;letter-spacing:0.03em;text-transform:uppercase;cursor:pointer;}
+  .toggle button.active{background:var(--chartreuse);color:#0a0a0c;}
+  .about-link{flex:0 0 auto;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;}
+  .about-link:hover{color:var(--chartreuse);}
+
+  .main-wrap{flex:1;position:relative;min-height:0;background:#050507;}
+  .main-wrap iframe{width:100%;height:100%;border:0;display:block;}
+  .now-tag{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(5,5,7,0.85);border:1px solid var(--line);border-top:2px solid var(--chartreuse);padding:5px 14px;font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--text);pointer-events:none;}
+
+  .strip{flex:0 0 auto;display:flex;gap:10px;padding:11px 14px;background:var(--panel);border-top:1px solid var(--line);overflow-x:auto;}
+  .mini{flex:1;min-width:178px;border:1px solid var(--line);background:#0a0a0c;cursor:pointer;transition:border-color .15s,transform .12s;display:flex;flex-direction:column;}
+  .mini:hover{border-color:rgba(214,255,58,0.5);transform:translateY(-2px);}
+  .mini.active{border-color:var(--chartreuse);}
+  .mini-head{display:flex;align-items:baseline;justify-content:space-between;padding:7px 10px 6px;gap:6px;}
+  .mini-name{font-size:12.5px;font-weight:800;letter-spacing:-0.01em;}
+  .mini-note{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--magenta);}
+  .mini.active .mini-name{color:var(--chartreuse);}
+  .mini-frame{position:relative;flex:1;height:118px;overflow:hidden;border-top:1px solid var(--line);background:#050507;}
+  .mini-frame iframe{position:absolute;top:0;left:0;width:200%;height:236px;border:0;transform:scale(0.5);transform-origin:top left;pointer-events:none;}
+  .mini-frame .scrim{position:absolute;inset:0;z-index:2;}
+  .mini-frame .open{position:absolute;bottom:6px;right:7px;z-index:3;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:var(--text);background:rgba(5,5,7,0.8);border:1px solid var(--line);padding:3px 7px;text-decoration:none;}
+  .mini-frame .open:hover{color:var(--chartreuse);border-color:var(--chartreuse);}
+  .mini.active .mini-frame .nowshowing{position:absolute;top:6px;left:7px;z-index:3;font-size:8.5px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#0a0a0c;background:var(--chartreuse);padding:2px 6px;}
+
+  .info-bg{position:fixed;inset:0;z-index:100;background:rgba(5,5,7,0.78);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px;}
+  .info-bg.open{display:flex;}
+  .info{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--chartreuse);max-width:560px;width:100%;max-height:84vh;overflow-y:auto;padding:26px 30px;}
+  .info h2{font-size:19px;font-weight:900;margin:0 0 12px;} .info p{font-family:var(--serif);font-size:13.5px;line-height:1.6;color:var(--text);margin:0 0 11px;}
+  .info b{color:var(--chartreuse);} .info .close{margin-top:8px;background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--sans);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;padding:8px 16px;cursor:pointer;}
+  .info .close:hover{color:var(--chartreuse);border-color:var(--chartreuse);}
+  @media(max-width:760px){ h1{display:none;} .strip{padding:9px;} .mini{min-width:150px;} }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="h-text">
+      <div class="kicker">Rubber meets road<span class="sep">/</span><span class="k2">Lighting: New York City and four comparison cities</span></div>
+      <h1 id="h1"></h1>
+    </div>
+    <div class="toggle" id="typeToggle">
+      <button data-type="satellite" class="active">Darkness × crime</button>
+      <button data-type="311">311 × crime</button>
+    </div>
+    <span class="about-link" id="aboutLink">About</span>
+  </header>
+
+  <div class="main-wrap">
+    <div class="now-tag" id="nowTag"></div>
+    <iframe id="mainFrame" title="Main map" src="about:blank"></iframe>
+  </div>
+
+  <div class="strip" id="strip"></div>
+</div>
+
+<div class="info-bg" id="infoBg">
+  <div class="info">
+    <h2>About this atlas</h2>
+    <p>New York City's street-lighting maps, shown large above, are the originals. The four smaller maps — <b>Chicago, Philadelphia, Baltimore and Los Angeles</b> — adapt the same method to each city's open data. Click any mini map to load it into the main view and explore it; click "open" to view it on its own.</p>
+    <p><b>Darkness × crime</b> crosses calibrated nighttime satellite radiance (the Visible Infrared Imaging Radiometer Suite, VIIRS, Black Marble composite) with violent crime. <b>311 × crime</b> crosses resident-reported streetlight-outage complaints with violent crime. Within each city map the two layers share the same time window.</p>
+    <p>The comparison-city maps are drafts for review, not published work.</p>
+    <button class="close" id="infoClose">Close</button>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  satellite: {
+    maps: [
+      { name:"New York City", note:"original", url:"https://vitalcity-nyc.github.io/street-lighting-map/" },
+      { name:"Chicago", url:"chicago/satellite.html" },
+      { name:"Philadelphia", url:"philadelphia/satellite.html" },
+      { name:"Baltimore", url:"baltimore/satellite.html" },
+      { name:"Los Angeles", url:"los-angeles/satellite.html" },
+    ]
+  },
+  "311": {
+    maps: [
+      { name:"New York City", note:"original", url:"https://vitalcity-nyc.github.io/bivariate-lighting-crime/" },
+      { name:"Chicago", url:"chicago/index.html" },
+      { name:"Philadelphia", url:"philadelphia/index.html" },
+      { name:"Baltimore", url:"baltimore/index.html" },
+      { name:"Los Angeles", url:"los-angeles/index.html" },
+    ]
+  }
+};
+const $ = id => document.getElementById(id);
+let type = new URLSearchParams(location.search).get("type") === "311" ? "311" : "satellite";
+let activeIdx = 0;
+
+function titleFor(){ return type === "311"
+  ? `Where <b>311 complaints and crime</b> overlap — five cities`
+  : `Where <b>darkness and crime</b> overlap — five cities`; }
+
+function setMain(i){
+  activeIdx = i;
+  const m = CONFIG[type].maps[i];
+  $("mainFrame").src = m.url;
+  $("nowTag").textContent = "Now exploring: " + m.name;
+  document.querySelectorAll(".mini").forEach((el,j)=>el.classList.toggle("active", j===i));
+}
+
+function render(){
+  $("h1").innerHTML = titleFor();
+  document.querySelectorAll("#typeToggle button").forEach(b=>b.classList.toggle("active", b.dataset.type===type));
+  const maps = CONFIG[type].maps;
+  $("strip").innerHTML = maps.map((m,i)=>`
+    <div class="mini" data-i="${i}">
+      <div class="mini-head"><span class="mini-name">${m.name}</span>${m.note?`<span class="mini-note">${m.note}</span>`:""}</div>
+      <div class="mini-frame">
+        <iframe src="${m.url}" loading="lazy" title="${m.name} preview" scrolling="no"></iframe>
+        <div class="scrim"></div>
+        <span class="nowshowing">Now showing</span>
+        <a class="open" href="${m.url}" target="_blank" rel="noopener">Open ↗</a>
+      </div>
+    </div>`).join("");
+  document.querySelectorAll(".mini").forEach(el=>{
+    el.addEventListener("click", e=>{ if(e.target.closest(".open")) return; setMain(+el.dataset.i); });
+  });
+  setMain(0); // New York City is the default main view
+}
+
+document.querySelectorAll("#typeToggle button").forEach(b=>b.addEventListener("click",()=>{
+  type = b.dataset.type;
+  const u = new URL(location); u.searchParams.set("type", type); history.replaceState(null,"",u);
+  render();
+}));
+$("aboutLink").addEventListener("click",()=>$("infoBg").classList.add("open"));
+$("infoClose").addEventListener("click",()=>$("infoBg").classList.remove("open"));
+$("infoBg").addEventListener("click",e=>{ if(e.target===$("infoBg")) $("infoBg").classList.remove("open"); });
+
+render();
+</script>
+</body>
+</html>
