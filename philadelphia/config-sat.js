@@ -1,0 +1,15 @@
+window.CITY = {
+  name: "Philadelphia",
+  crimeSource: "violent crime Philadelphia police recorded",
+  crimeCats: "Philadelphia Police incidents in the assault, robbery and criminal-homicide categories",
+  lightingDesc: "Calibrated nighttime radiance (nW/cm²/sr) from NASA's VIIRS Black Marble annual composite (VNP46A4, 2023 — inside the crime window), sampled per hex, log-scaled and split into terciles.",
+  lightingShort: "VIIRS annual radiance, 2023",
+  geocodeCaveat: "Philadelphia geocodes each incident to a point.",
+  denseArea: "Center City",
+  bounds: [[39.86, -75.29], [40.14, -74.95]],
+  center: [39.9526, -75.1652],
+  zoom: 11.5,
+  minZoom: 10,
+  geoBox: { s: 39.84, n: 40.16, w: -75.31, e: -74.93 },
+  staleNote: "",
+};

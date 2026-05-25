@@ -1,0 +1,15 @@
+window.CITY = {
+  name: "Los Angeles",
+  crimeSource: "violent crime LAPD recorded",
+  crimeCats: "LAPD reported incidents in the assault, battery, robbery and homicide categories",
+  lightingDesc: "Calibrated nighttime radiance (nW/cm²/sr) from NASA's VIIRS Black Marble annual composite (VNP46A4, 2023 — the same year as the crime data), sampled per hex, log-scaled and split into terciles.",
+  lightingShort: "VIIRS annual radiance, 2023",
+  geocodeCaveat: "Los Angeles geocodes each crime to the nearest hundred block, not the exact address.",
+  denseArea: "Downtown and Hollywood",
+  bounds: [[33.70, -118.67], [34.34, -118.15]],
+  center: [34.02, -118.41],
+  zoom: 10.5,
+  minZoom: 9,
+  geoBox: { s: 33.68, n: 34.36, w: -118.69, e: -118.13 },
+  staleNote: "Crime is LAPD calendar 2023; the lighting layer is the 2023 VIIRS annual composite — same year.",
+};

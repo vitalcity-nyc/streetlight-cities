@@ -1,0 +1,15 @@
+window.CITY = {
+  name: "Chicago",
+  crimeSource: "violent crime Chicago police recorded",
+  crimeCats: "Chicago Police incidents in the assault, battery, robbery and homicide categories",
+  lightingDesc: "Calibrated nighttime radiance (nW/cm²/sr) from NASA's VIIRS Black Marble annual composite (VNP46A4, 2023 — inside the crime window), sampled per hex.",
+  lightingShort: "VIIRS annual radiance, 2023",
+  geocodeCaveat: "Chicago publishes each crime at the block level, not the exact address.",
+  denseArea: "the Loop",
+  bounds: [[41.62, -87.95], [42.05, -87.50]],
+  center: [41.84, -87.68],
+  zoom: 11,
+  minZoom: 9,
+  geoBox: { s: 41.60, n: 42.07, w: -87.97, e: -87.48 },
+  staleNote: "",
+};

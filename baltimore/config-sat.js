@@ -1,0 +1,15 @@
+window.CITY = {
+  name: "Baltimore",
+  crimeSource: "violent crime Baltimore police recorded",
+  crimeCats: "Baltimore Police Part 1 incidents in the assault, robbery, shooting and homicide categories",
+  lightingDesc: "Calibrated nighttime radiance (nW/cm²/sr) from NASA's VIIRS Black Marble annual composite (VNP46A4, 2023 — inside the crime window), sampled per hex, log-scaled and split into terciles.",
+  lightingShort: "VIIRS annual radiance, 2023",
+  geocodeCaveat: "Baltimore geocodes each crime to a point.",
+  denseArea: "the Inner Harbor and downtown",
+  bounds: [[39.20, -76.74], [39.38, -76.52]],
+  center: [39.299, -76.612],
+  zoom: 12,
+  minZoom: 10,
+  geoBox: { s: 39.18, n: 39.40, w: -76.76, e: -76.50 },
+  staleNote: "Crime is BPD Part 1 for 2023–2024; the lighting layer is the 2023 VIIRS annual composite, inside that window.",
+};

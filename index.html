@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lighting and crime — multi-city maps</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#0a0a0c; --panel:#131318; --line:#26262e; --text:#e7e7ec; --muted:#8a8a96;
+    --chartreuse:#d6ff3a; --magenta:#e7466d; --cyan:#3fa9b9; --amber:#ffb020;
+    --serif:Georgia,'Times New Roman',serif; --sans:'Helvetica Neue',Arial,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 24px 80px;}
+  .kicker{font-size:11px;font-weight:900;letter-spacing:0.16em;text-transform:uppercase;color:var(--chartreuse);}
+  .kicker .sep{color:rgba(255,255,255,0.4);font-weight:400;margin:0 8px;}
+  .kicker .k2{color:rgba(255,255,255,0.85);font-weight:700;}
+  h1{font-size:46px;line-height:1.05;letter-spacing:-0.02em;font-weight:900;margin:14px 0 0;max-width:18ch;}
+  h1 em{font-style:normal;color:var(--chartreuse);}
+  .lede{font-family:var(--serif);font-size:17px;line-height:1.6;color:#c8c8d0;max-width:62ch;margin:18px 0 0;}
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px;max-width:62ch;line-height:1.5;}
+
+  .legend2{display:flex;flex-wrap:wrap;gap:22px;margin:30px 0 36px;padding:18px 20px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--chartreuse);}
+  .l2{flex:1;min-width:240px;}
+  .l2 h3{font-size:13px;font-weight:800;margin:0 0 5px;}
+  .l2 p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0;}
+  .l2 .tag{display:inline-block;font-size:9px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;margin-right:7px;vertical-align:middle;}
+  .tag.t311{background:rgba(63,169,185,0.16);color:var(--cyan);}
+  .tag.tsat{background:rgba(231,70,109,0.16);color:var(--magenta);}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+  @media(max-width:680px){.grid{grid-template-columns:1fr;} h1{font-size:34px;}}
+  .card{background:var(--panel);border:1px solid var(--line);padding:22px 22px 20px;transition:border-color .15s,transform .15s;}
+  .card:hover{border-color:rgba(214,255,58,0.45);transform:translateY(-2px);}
+  .card-city{font-size:26px;font-weight:900;letter-spacing:-0.01em;}
+  .card-window{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:3px;}
+  .card-stats{display:flex;gap:20px;margin:16px 0 18px;}
+  .stat .v{font-family:var(--serif);font-size:21px;font-weight:700;}
+  .stat .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;}
+  .card-links{display:flex;gap:9px;}
+  .blink{flex:1;display:block;text-align:center;padding:11px 8px;font-size:11px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;border:1px solid var(--line);transition:all .15s;}
+  .blink .sub{display:block;font-size:9px;font-weight:600;letter-spacing:0.03em;opacity:0.62;margin-top:3px;text-transform:none;}
+  .blink.b311{color:var(--cyan);border-color:rgba(63,169,185,0.4);} .blink.b311:hover{background:var(--cyan);color:#04141a;}
+  .blink.bsat{color:var(--magenta);border-color:rgba(231,70,109,0.4);} .blink.bsat:hover{background:var(--magenta);color:#1a0309;}
+
+  .foot{margin-top:40px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .foot a{color:var(--chartreuse);text-decoration:underline;text-underline-offset:3px;}
+  .foot b{color:var(--text);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Rubber meets road<span class="sep">/</span><span class="k2">Lighting: darkness, crime and 311, multi-city</span></div>
+  <h1>Where <em>darkness, broken lights and crime</em> overlap — four cities</h1>
+  <p class="lede">Prototype maps adapting New York City's street-lighting tools to Chicago, Philadelphia, Baltimore and Los Angeles. Each city has two companion maps built from open data on a shared hexagon grid.</p>
+  <p class="note">These are drafts for review, not published work. Within each map the two data layers share the same time window; windows differ between cities because the available data does (Baltimore and Los Angeles crime feeds stop at the end of 2024 and 2023 respectively).</p>
+
+  <div class="legend2">
+    <div class="l2">
+      <h3><span class="tag t311">311 × crime</span></h3>
+      <p>Crosses 311 streetlight-outage complaints with violent crime. Shows where residents report dark or broken lights and where crime is recorded — a ground-truth, resident-reported view.</p>
+    </div>
+    <div class="l2">
+      <h3><span class="tag tsat">Darkness × crime</span></h3>
+      <p>Crosses calibrated nighttime satellite radiance — the Visible Infrared Imaging Radiometer Suite (VIIRS) Black Marble composite — with violent crime, using percentile sliders to flag dark, high-crime cells. Mirrors the New York City satellite tool.</p>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="foot">
+    <p><b>Method, in brief.</b> Police-reported violent crime (assault, robbery and homicide, plus battery and shootings where a city codes them) is binned to a roughly block-scale hexagon grid. The 311 maps add streetlight-outage service requests; the satellite maps add 2023 VIIRS Black Marble radiance. Each map carries its own full methodology and caveats.</p>
+    <p>Reference: the original <a href="https://vitalcity-nyc.github.io/street-lighting-map/" target="_blank" rel="noopener">New York City darkness-and-crime map</a> these adapt.</p>
+  </div>
+</div>
+
+<script>
+const CITIES = [
+  { name:"Chicago", dir:"chicago", win:"Jan 2023 – Apr 2026", hex:"859", a:"148,212", c:"94,781" },
+  { name:"Philadelphia", dir:"philadelphia", win:"Jan 2023 – Apr 2026", hex:"530", a:"33,561", c:"126,727" },
+  { name:"Baltimore", dir:"baltimore", win:"Jan 2023 – Dec 2024", hex:"364", a:"31,496", c:"40,901" },
+  { name:"Los Angeles", dir:"los-angeles", win:"Jan 2023 – Dec 2023", hex:"1,408", a:"32,258", c:"28,279" },
+];
+document.getElementById('grid').innerHTML = CITIES.map(c=>`
+  <div class="card">
+    <div class="card-city">${c.name}</div>
+    <div class="card-window">${c.win}</div>
+    <div class="card-stats">
+      <div class="stat"><div class="v">${c.hex}</div><div class="l">hex cells</div></div>
+      <div class="stat"><div class="v">${c.a}</div><div class="l">311 complaints</div></div>
+      <div class="stat"><div class="v">${c.c}</div><div class="l">violent crimes</div></div>
+    </div>
+    <div class="card-links">
+      <a class="blink b311" href="${c.dir}/index.html">311 × crime<span class="sub">resident complaints</span></a>
+      <a class="blink bsat" href="${c.dir}/satellite.html">Darkness × crime<span class="sub">satellite radiance</span></a>
+    </div>
+  </div>`).join('');
+</script>
+</body>
+</html>

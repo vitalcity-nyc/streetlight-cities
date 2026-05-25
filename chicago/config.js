@@ -1,0 +1,14 @@
+window.CITY = {
+  name: "Chicago",
+  crimeSource: "violent crime Chicago police recorded",
+  crimeCats: "Chicago Police reported incidents by primary type: assault, battery, robbery and homicide",
+  outageTypes: "street light out, alley light out and viaduct light out",
+  geocodeCaveat: "Chicago publishes each crime at the block level (e.g. the 100 block of N State St), not the exact address, to protect privacy &mdash; so crime points are snapped to block midpoints.",
+  denseArea: "the Loop",
+  bounds: [[41.62, -87.95], [42.05, -87.50]],
+  center: [41.84, -87.68],
+  zoom: 11,
+  minZoom: 9,
+  geoBox: { s: 41.60, n: 42.07, w: -87.97, e: -87.48 },
+  staleNote: "",
+};
