@@ -56,6 +56,7 @@ print(f"  {len(outages)} complaints with coords", file=sys.stderr)
 
 CRIME_WHERE = ("(Description LIKE '%ASSAULT%' OR Description LIKE '%ROBBERY%' "
                "OR Description='HOMICIDE' OR Description='SHOOTING') "
+               "AND (Inside_Outside <> 'I' OR Inside_Outside IS NULL) "  # exclude indoor; keep outdoor + blank
                f"AND CrimeDateTime >= DATE '{WIN_START}' AND CrimeDateTime < DATE '{WIN_END}'")
 print("Baltimore: fetching Part 1 crime…", file=sys.stderr)
 crimes = []

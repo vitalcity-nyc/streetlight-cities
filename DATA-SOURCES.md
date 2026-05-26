@@ -30,15 +30,31 @@ as equivalent — only the within-city rankings.
 
 Each city's own police department, via that city's open-data portal. We keep
 street-level violent categories (the violence street lighting most plausibly
-affects), exclude sex crimes, and — where the data flags it — exclude clearly
-indoor incidents. Counts are total incidents over each city's window.
+affects) and exclude sex crimes.
+
+**Time of day.** The two map types treat time differently, matching New York
+City's own two maps:
+- **311 maps default to night only** (8 PM – 6 AM), with a checkbox to add
+  daytime back in.
+- **Satellite maps use all hours** (day and night) — they are not limited to
+  nighttime.
+
+**Indoor vs outdoor.** Where the data carries an indoor/outdoor field, incidents
+flagged as indoors are excluded so the map reflects street-level events:
+**New York City, Chicago, Los Angeles and Baltimore** all exclude indoor crime.
+**Philadelphia is the exception** — its police file has no indoor/outdoor field,
+so its crime layer includes indoor incidents and is therefore not directly
+comparable on that axis.
+
+Counts in the table below are total incidents (all hours) over each city's
+window.
 
 | City | Source / portal | Dataset | Categories kept | Window | Incidents |
 |------|-----------------|---------|-----------------|--------|-----------|
 | New York City | NYPD via NYC Open Data | NYPD complaint data | Felony assault, misdemeanor assault, robbery, murder | Jan 2024 – Mar 2026 | 107,930 |
 | Chicago | Chicago Police via data.cityofchicago.org | `ijzp-q8t2` | Assault, battery, robbery, homicide | Jan 2023 – Apr 2026 | 94,781 |
 | Philadelphia | Philadelphia Police via phl.carto.com | `incidents_part1_part2` | Aggravated assault (firearm and non-firearm), other assaults, robbery (firearm and non-firearm), criminal homicide | Jan 2023 – Apr 2026 | 126,727 |
-| Baltimore | Baltimore Police via Open Baltimore (ArcGIS) | `Part1_Crime_Beta` | Assault, robbery, shooting, homicide | Jan 2023 – Dec 2024 | 40,901 |
+| Baltimore | Baltimore Police via Open Baltimore (ArcGIS) | `Part1_Crime_Beta` | Assault, robbery, shooting, homicide (outdoor only) | Jan 2023 – Dec 2024 | 28,512 |
 | Los Angeles | LAPD via data.lacity.org | `2nrs-mtv8` (Crime Data 2020 to present) | Assault, battery, robbery, homicide (sex crimes excluded) | Calendar 2023 | 28,279 |
 
 Notes:

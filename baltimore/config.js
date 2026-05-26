@@ -3,7 +3,7 @@ window.CITY = {
   crimeSource: "violent crime Baltimore police recorded",
   crimeCats: "Baltimore Police Part 1 incidents in the assault, robbery, shooting and homicide categories",
   outageTypes: "street light out, knocked-down or missing-pole reports",
-  geocodeCaveat: "Baltimore geocodes each crime to a point; the published file does not separate indoor from outdoor incidents, so all locations are kept.",
+  geocodeCaveat: "Baltimore geocodes each crime to a point; incidents flagged as occurring indoors are excluded.",
   denseArea: "the Inner Harbor and downtown",
   bounds: [[39.20, -76.74], [39.38, -76.52]],
   center: [39.299, -76.612],
