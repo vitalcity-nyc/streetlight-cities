@@ -99,7 +99,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const DIRS = [["chicago","Chicago"],["philadelphia","Philadelphia"],["baltimore","Baltimore"],["los-angeles","L.A."]];
+const DIRS = [["nyc","New York City"],["chicago","Chicago"],["philadelphia","Philadelphia"],["baltimore","Baltimore"],["los-angeles","L.A."]];
 const $ = id => document.getElementById(id);
 const PALETTE = {"0-0":"#3b3b44","0-1":"#3f6b78","0-2":"#3fa9b9","1-0":"#7a4756","1-1":"#7d6b78","1-2":"#7ea3b1","2-0":"#d83a6e","2-1":"#d36a7a","2-2":"#f0e442"};
 
@@ -181,7 +181,7 @@ acI.addEventListener("input",()=>{const q=acI.value.trim();clearTimeout(acT);if(
 acI.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();hideAC();doSearch();}else if(e.key==="Escape")hideAC();});
 acI.addEventListener("blur",()=>setTimeout(hideAC,150));
 
-loadCity(new URLSearchParams(location.search).get("city")||"chicago");
+loadCity(new URLSearchParams(location.search).get("city")||"nyc");
 </script>
 </body>
 </html>

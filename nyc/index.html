@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where 311 lighting complaints and crime overlap</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --bg: #0a0a0c; --panel: #131318; --text: #e7e7ec; --muted: #8a8a96; --accent: #d6ff3a;
+  }
+  html, body { margin:0; padding:0; height:100%; background:var(--bg); color:var(--text); font-family:'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+  #map { position:absolute; inset:0; }
+  .panel {
+    position:absolute; top:14px; left:14px; z-index:500;
+    background:rgba(19,19,24,0.94); backdrop-filter:blur(6px);
+    border:1px solid #26262e; border-top:3px solid #d6ff3a; border-radius:0;
+    width:380px; max-width:calc(100vw - 28px); line-height:1.45;
+    max-height:calc(100vh - 28px); overflow-y:auto;
+  }
+  .panel-body { padding:16px 18px; }
+  .panel .kicker { font-size:10px; font-weight:900; letter-spacing:0.12em; text-transform:uppercase; color:#d6ff3a; margin:14px 20px 10px; line-height:1.4; }
+  .panel .kicker .sep { color:rgba(255,255,255,0.45); font-weight:400; margin:0 6px; }
+  .panel .kicker .kicker-b { color:rgba(255,255,255,0.85); font-weight:700; }
+  .panel h1 { font-weight:900; font-size:32px; line-height:1.05; letter-spacing:-0.02em; margin:0 20px 12px; padding-right:60px; color:#fff; }
+  .panel h1 em { font-style:normal; }
+  @media (max-width:480px){ .panel h1 { font-size:26px; } }
+  .panel p { font-size:12.5px; color:#c8c8d0; margin:0 0 8px; }
+  .panel .muted { color:var(--muted); font-size:11px; }
+  .stale { font-size:11px; color:#ffb020; border:1px solid rgba(255,176,32,0.4); background:rgba(255,176,32,0.08); padding:6px 8px; margin:0 0 10px; border-radius:4px; }
+  .legend { position:absolute; bottom:18px; right:14px; z-index:500; background:rgba(19,19,24,0.94); border:1px solid #26262e; border-radius:8px; padding:12px 14px; }
+  .legend-grid { display:grid; grid-template-columns:18px repeat(3,28px); grid-template-rows:repeat(3,28px) 18px; gap:2px; align-items:center; justify-items:center; }
+  .legend-cell { width:28px; height:28px; }
+  .legend-y { writing-mode:vertical-rl; transform:rotate(180deg); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+  .legend-x { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; grid-column:2 / span 3; }
+  .legend-title { font-size:11px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.08em; }
+  .tooltip-box { background:#0d0d12; border:1px solid #2a2a32; border-radius:6px; padding:8px 10px; color:#e7e7ec; font-size:12px; line-height:1.4; box-shadow:0 4px 14px rgba(0,0,0,0.4); }
+  .tooltip-box b { color:var(--accent); }
+  .leaflet-tooltip { background:none !important; border:0 !important; box-shadow:none !important; padding:0 !important; }
+  .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before { display:none !important; }
+  .toggle { display:flex; gap:6px; margin-top:6px; }
+  .toggle button { flex:1; background:#1d1d24; color:#c8c8d0; border:1px solid #2a2a32; padding:5px 8px; font-size:11px; border-radius:4px; cursor:pointer; letter-spacing:0.05em; text-transform:uppercase; }
+  .toggle button.active { background:var(--accent); color:#0a0a0c; border-color:var(--accent); font-weight:600; }
+  .night-toggle { display:flex; align-items:center; gap:8px; margin:8px 0 0; padding:6px 8px; background:#0d0d12; border:1px solid #2a2a32; border-radius:4px; font-size:11px; color:#dcdce2; cursor:pointer; user-select:none; }
+  .night-toggle input { margin:0; accent-color:var(--accent); cursor:pointer; }
+  .night-toggle .muted { color:#8a8a96; }
+  .chronic-pulse { position:relative; }
+  .chronic-pulse .core { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%; background:#ffb020; box-shadow:0 0 6px rgba(255,176,32,0.9); }
+  .chronic-pulse .ring { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%; border:2px solid #ffb020; animation:chronic-pulse-anim 1.6s ease-out infinite; }
+  @keyframes chronic-pulse-anim { 0%{width:10px;height:10px;opacity:0.95;} 100%{width:44px;height:44px;opacity:0;} }
+  .chronic-popup .leaflet-popup-content-wrapper { background:#0d0d12; color:#e7e7ec; border:1px solid #2a2a32; border-radius:6px; font-size:12.5px; }
+  .chronic-popup .leaflet-popup-tip { background:#0d0d12; }
+  .chronic-popup b { color:#ffb020; }
+  .search { display:flex; gap:6px; margin-top:10px; position:relative; }
+  .search input { flex:1; background:#0a0a0c; color:var(--text); border:1px solid #2a2a32; border-radius:4px; padding:7px 9px; font-size:12px; font-family:inherit; }
+  .search input:focus { outline:none; border-color:var(--accent); }
+  .search button { background:var(--accent); color:#0a0a0c; border:0; border-radius:4px; padding:0 10px; font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; font-family:inherit; }
+  .search-err { font-size:11px; color:#ff6a8a; margin-top:4px; min-height:14px; }
+  .ac-list { position:absolute; top:100%; left:0; right:0; margin-top:2px; z-index:600; background:#0d0d12; border:1px solid #2a2a32; border-radius:4px; max-height:240px; overflow-y:auto; display:none; box-shadow:0 6px 16px rgba(0,0,0,0.5); }
+  .ac-list.open { display:block; }
+  .ac-item { padding:7px 10px; font-size:12px; color:#dcdce2; cursor:pointer; border-bottom:1px solid #1d1d24; line-height:1.3; }
+  .ac-item:last-child { border-bottom:0; }
+  .ac-item:hover, .ac-item.active { background:#1d1d24; color:#fff; }
+  .ac-item .ac-sub { display:block; font-size:10.5px; color:#8a8a96; margin-top:2px; }
+  .meta-table { width:100%; font-size:11.5px; border-collapse:collapse; margin-top:4px; }
+  .meta-table td { padding:3px 4px; vertical-align:top; }
+  .meta-table td:first-child { color:var(--muted); width:48%; }
+  .meta-table td:last-child { color:#dcdce2; }
+  details { margin-top:10px; }
+  details summary { list-style:none; cursor:pointer; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); padding:4px 0; }
+  details summary::-webkit-details-marker { display:none; }
+  details summary:before { content:"+  "; color:var(--accent); }
+  details[open] summary:before { content:"\2212  "; }
+  details .body { padding-top:6px; }
+  details .body p { font-size:11.5px; margin:0 0 6px; color:#c8c8d0; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="panel">
+  <div class="kicker" id="kicker"></div>
+  <h1 id="h1"></h1>
+  <div class="panel-body">
+  <div class="stale" id="stale" style="display:none"></div>
+  <p id="intro"></p>
+  <p class="muted" id="intro-window" style="margin:-2px 0 8px">&nbsp;</p>
+
+  <div class="toggle">
+    <button data-mode="bv" class="active">Outage complaints + crime</button>
+    <button data-mode="light">Outage complaints</button>
+    <button data-mode="crime">Crime</button>
+  </div>
+  <label class="night-toggle" title="When checked, includes daytime crime alongside the night-only default">
+    <input type="checkbox" id="includeday">
+    <span>Include daytime crime <span class="muted">(default: night only, 8 PM &ndash; 6 AM)</span></span>
+  </label>
+  <label class="night-toggle" title="Overlay the top 20 streetlight 311 complaint hotspots">
+    <input type="checkbox" id="showchronic">
+    <span>Show top 20 chronic complaint spots</span>
+  </label>
+
+  <div class="search">
+    <input id="addr" type="text" placeholder="Address or landmark&hellip;" autocomplete="off">
+    <button id="addrgo">Go</button>
+    <div class="ac-list" id="aclist"></div>
+  </div>
+  <div class="search-err" id="addrerr"></div>
+
+  <details>
+    <summary>What's being measured</summary>
+    <div class="body">
+      <p id="measured-crime"></p>
+      <p><b>Default is night only</b> (8 PM &ndash; 6 AM by the incident timestamp). Use the toggle above to add daytime crime back in.</p>
+      <p id="measured-outage"></p>
+      <p><b>Geography.</b> H3 hexagons at resolution <span id="m_res"></span> &mdash; roughly a few blocks apiece. Cells with no events are not drawn.</p>
+      <table class="meta-table" id="m_table"></table>
+    </div>
+  </details>
+
+  <details>
+    <summary>How "high" is defined</summary>
+    <div class="body">
+      <p id="m_pct"></p>
+      <table class="meta-table" id="m_cuts"></table>
+      <p class="muted">"Story" cells (high on both): <b id="m_story"></b> hexes.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Caveats</summary>
+    <div class="body">
+      <p id="caveat-geocode"></p>
+      <p><b style="color:var(--accent)">311 reporting bias.</b> Complaint volume tracks who calls 311 as much as actual outage incidence; under-reporting in some neighborhoods is real.</p>
+      <p id="caveat-denominator"></p>
+    </div>
+  </details>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-title">Bivariate key</div>
+  <div class="legend-grid" id="legend"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const C = window.CITY;
+// ---- fill city-specific copy ------------------------------------------------
+document.title = C.name + ": where 311 lighting complaints and crime overlap";
+document.getElementById("kicker").innerHTML =
+  `Rubber meets road<span class="sep">/</span><span class="kicker-b">Lighting: 311 complaints and crime, overlaid &mdash; ${C.name}</span>`;
+document.getElementById("h1").innerHTML =
+  `${C.name}: where <em>311 lighting complaints and crime</em> overlap`;
+document.getElementById("intro").innerHTML =
+  `Each hex shows two things at once: <b style="color:var(--accent)">311 streetlight-out complaints</b> in it, and <b style="color:var(--accent)">${C.crimeSource}</b> in it. Cells where both are high &mdash; where the city should actively investigate the need for better lighting &mdash; appear in <span style="background:#f0e442;color:#0a0a0c;padding:0 4px;border-radius:2px;font-weight:600">yellow</span>.`;
+document.getElementById("measured-crime").innerHTML =
+  `<b>Crime layer.</b> ${C.crimeCats} &mdash; the street-level violence street lighting most plausibly affects. Sex crimes are excluded (they happen overwhelmingly indoors and the lighting/crime literature does not show a meaningful relationship for them). Incidents whose location is clearly indoors (apartments, residences, stores, etc.) are also excluded; records with a blank or outdoor location are kept.`;
+document.getElementById("measured-outage").innerHTML =
+  `<b>Outages layer.</b> 311 streetlight complaints &mdash; ${C.outageTypes}.`;
+document.getElementById("caveat-geocode").innerHTML =
+  `<b style="color:var(--accent)">Not coded the same way.</b> ${C.geocodeCaveat} 311 streetlight complaints are geocoded to the reported address. The two layers have different spatial precision; at this hex size a crime can land in the next hex over from where it actually happened.`;
+document.getElementById("caveat-denominator").innerHTML =
+  `<b style="color:var(--accent)">No population denominator.</b> Counts aren't normalized for population, foot traffic or area &mdash; so dense commercial areas (${C.denseArea}) can read high simply from how many people pass through, not from how unsafe they are for residents.`;
+if (C.staleNote) {
+  const s = document.getElementById("stale");
+  s.textContent = C.staleNote;
+  s.style.display = "block";
+}
+
+const PALETTE = {
+  "0-0":"#3b3b44","0-1":"#3f6b78","0-2":"#3fa9b9",
+  "1-0":"#7a4756","1-1":"#7d6b78","1-2":"#7ea3b1",
+  "2-0":"#d83a6e","2-1":"#d36a7a","2-2":"#f0e442",
+};
+
+const CITY_BOUNDS = L.latLngBounds(C.bounds[0], C.bounds[1]);
+const map = L.map("map", {
+  zoomControl:false, preferCanvas:true,
+  maxBounds: CITY_BOUNDS.pad(0.08), maxBoundsViscosity:0.8,
+  minZoom: C.minZoom || 9, zoomSnap:0.5, zoomDelta:0.5,
+});
+L.control.zoom({ position:"topright" }).addTo(map);
+map.setView(C.center, C.zoom);
+
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
+  attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:19,
+}).addTo(map);
+map.createPane("labels");
+map.getPane("labels").style.zIndex = 450;
+map.getPane("labels").style.pointerEvents = "none";
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png", {
+  maxZoom:19, pane:"labels",
+}).addTo(map);
+
+(function() {
+  const el = document.getElementById("legend"); el.innerHTML = "";
+  [2,1,0].forEach((r,ri) => {
+    const yl = document.createElement("div");
+    yl.className = "legend-y";
+    yl.textContent = ri === 0 ? "More crime →" : "";
+    el.appendChild(yl);
+    [0,1,2].forEach(c => {
+      const cell = document.createElement("div");
+      cell.className = "legend-cell";
+      cell.style.background = PALETTE[`${r}-${c}`];
+      el.appendChild(cell);
+    });
+  });
+  el.appendChild(document.createElement("div"));
+  const xl = document.createElement("div");
+  xl.className = "legend-x"; xl.textContent = "More outages →";
+  el.appendChild(xl);
+})();
+
+let geo, mode = "bv", META, nightOnly = true, chronicLayer = null;
+
+function crimeProps(p) {
+  return nightOnly
+    ? { n:p.crime_night_n, t:p.crime_night_t, top:p.crime_night_top, bv:p.bv_night }
+    : { n:p.crime_n, t:p.crime_t, top:p.crime_top, bv:p.bv };
+}
+function styleFor(p) {
+  const c = crimeProps(p);
+  if (mode === "bv") return { color:"#0a0a0c", weight:0.2, fillColor:PALETTE[c.bv], fillOpacity:(p.light_n||c.n)?0.78:0 };
+  if (mode === "light") {
+    const ramp = ["#1c1c22","#274f59","#3aa9b9","#7ed4df"];
+    return { color:"#0a0a0c", weight:0.2, fillColor:ramp[p.light_t]||ramp[0], fillOpacity:p.light_n?0.78:0 };
+  }
+  const ramp = ["#1c1c22","#5e2a3c","#a8395e","#f0e442"];
+  return { color:"#0a0a0c", weight:0.2, fillColor:ramp[c.t]||ramp[0], fillOpacity:c.n?0.78:0 };
+}
+
+const BIN_LABEL = ["low","mid","high"];
+let WIN_CRIME = "", WIN_LIGHT = "";
+function parseISODate(s){ if(!s) return null; const [y,m,d]=s.slice(0,10).split("-").map(Number); return new Date(y,m-1,d); }
+function shortRange(a,b){ const f=s=>{const d=parseISODate(s); return d?d.toLocaleDateString("en-US",{month:"short",year:"numeric"}):"";}; return (!a||!b)?"":`${f(a)} – ${f(b)}`; }
+function fmtTopPct(p){ if(p==null) return null; return p<=0?"<1%":p+"%"; }
+function rankSuffix(bin,topPct){ const f=fmtTopPct(topPct); return f==null?BIN_LABEL[bin]:`${BIN_LABEL[bin]} · top ${f}`; }
+function fmtDate(s){ const d=parseISODate(s); return d?d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"—"; }
+
+function tipHtml(p) {
+  const place = p.nta ? `<div style="font-weight:600;color:#fff;margin-bottom:5px">${p.nta}${p.boro?`<span style="color:#8a8a96;font-weight:400"> · ${p.boro}</span>`:""}</div>` : "";
+  const c = crimeProps(p);
+  const crimeLabel = nightOnly ? "Violent crime (night)" : "Violent crime";
+  const crimeWin = nightOnly ? WIN_CRIME + " · 8 PM – 6 AM" : WIN_CRIME;
+  return `<div class="tooltip-box">${place}
+    <div><b>Streetlight 311:</b> ${p.light_n} complaints <span style="color:#8a8a96">(${rankSuffix(p.light_t,p.light_top)})</span></div>
+    <div style="color:#8a8a96;font-size:11px;margin:1px 0 4px">${WIN_LIGHT}</div>
+    <div><b>${crimeLabel}:</b> ${c.n} <span style="color:#8a8a96">(${rankSuffix(c.t,c.top)})</span></div>
+    <div style="color:#8a8a96;font-size:11px;margin-top:1px">${crimeWin}</div></div>`;
+}
+
+function renderMeta(m) {
+  document.getElementById("m_res").textContent = m.h3_res;
+  const crimeN = nightOnly ? m.crime.night_total_points : m.crime.total_points;
+  const crimeLabel = nightOnly ? "Crime points (night, 8 PM–6 AM)" : "Crime points";
+  document.getElementById("m_table").innerHTML = `
+    <tr><td>Crime window</td><td>${fmtDate(m.crime.first_date)} – ${fmtDate(m.crime.last_date)}</td></tr>
+    <tr><td>${crimeLabel}</td><td>${crimeN.toLocaleString()}</td></tr>
+    <tr><td>Outage window</td><td>${fmtDate(m.outages.first_date)} – ${fmtDate(m.outages.last_date)}</td></tr>
+    <tr><td>Outage points</td><td>${m.outages.total_points.toLocaleString()}</td></tr>
+    <tr><td>Built</td><td>${fmtDate(m.generated)}</td></tr>`;
+  document.getElementById("m_pct").textContent = m.percentile_method + ".";
+  const cuts = nightOnly ? m.crime.night_cuts : m.crime.cuts;
+  const cutLabel = nightOnly ? "Night crime" : "Crime";
+  document.getElementById("m_cuts").innerHTML = `
+    <tr><td>${cutLabel} · mid threshold</td><td>≥ ${cuts.mid} incidents / hex</td></tr>
+    <tr><td>${cutLabel} · high threshold</td><td>≥ ${cuts.high} incidents / hex</td></tr>
+    <tr><td>Outages · mid threshold</td><td>≥ ${m.outages.cuts.mid} complaints / hex</td></tr>
+    <tr><td>Outages · high threshold</td><td>≥ ${m.outages.cuts.high} complaints / hex</td></tr>`;
+  let story;
+  if (geo) { story = 0; geo.eachLayer(l => { if (crimeProps(l.feature.properties).bv === "2-2") story++; }); }
+  else story = m.class_counts["2-2"] || 0;
+  document.getElementById("m_story").textContent = story.toLocaleString();
+}
+
+fetch("hexes.geojson").then(r=>r.json()).then(j => {
+  META = j.meta;
+  WIN_CRIME = "Crime window: " + shortRange(META.crime.first_date, META.crime.last_date);
+  WIN_LIGHT = "Outage window: " + shortRange(META.outages.first_date, META.outages.last_date);
+  document.getElementById("intro-window").textContent =
+    `Crime: ${shortRange(META.crime.first_date, META.crime.last_date)}. Outages: ${shortRange(META.outages.first_date, META.outages.last_date)}.`;
+  geo = L.geoJSON(j, {
+    style: f => styleFor(f.properties),
+    onEachFeature: (f, layer) => layer.bindTooltip(tipHtml(f.properties), { sticky:true, direction:"top" }),
+  }).addTo(map);
+  renderMeta(META);
+});
+
+document.querySelectorAll(".toggle button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".toggle button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active"); mode = b.dataset.mode;
+    if (geo) geo.setStyle(f => styleFor(f.properties));
+  });
+});
+
+let CHRONIC = null;
+function buildChronicLayer() {
+  if (!CHRONIC) return null;
+  const layer = L.layerGroup();
+  const since = CHRONIC.since ? new Date(CHRONIC.since).toLocaleDateString("en-US",{month:"short",year:"numeric"}) : "";
+  const icon = () => L.divIcon({ className:"chronic-pulse", html:'<div class="ring"></div><div class="core"></div>', iconSize:[10,10], iconAnchor:[5,5] });
+  CHRONIC.spots.forEach(s => {
+    L.marker([s.lat,s.lng], { icon:icon(), interactive:true, zIndexOffset:1000 })
+      .bindPopup(`<b>${s.addr}</b><br>${s.borough}<br>${s.count} 311 streetlight complaints${since?" since "+since:""}`, { className:"chronic-popup", maxWidth:240 })
+      .addTo(layer);
+  });
+  return layer;
+}
+fetch("chronic.json").then(r=>r.json()).then(j => { CHRONIC = j; });
+document.getElementById("showchronic").addEventListener("change", e => {
+  if (e.target.checked) { if (!chronicLayer) chronicLayer = buildChronicLayer(); if (chronicLayer) chronicLayer.addTo(map); }
+  else if (chronicLayer) map.removeLayer(chronicLayer);
+});
+document.getElementById("includeday").addEventListener("change", e => {
+  nightOnly = !e.target.checked;
+  if (geo) { geo.setStyle(f => styleFor(f.properties)); geo.eachLayer(l => l.setTooltipContent(tipHtml(l.feature.properties))); }
+  if (META) renderMeta(META);
+});
+
+// Address search — Photon (komoot), biased to the city, clamped to its bbox.
+let searchMarker;
+const GB = C.geoBox;
+function inCity(lat, lon) { return lat>=GB.s && lat<=GB.n && lon>=GB.w && lon<=GB.e; }
+function photonLabel(p) {
+  const main = p.name || [p.housenumber, p.street].filter(Boolean).join(" ") || p.city || "";
+  const sub = [p.street && p.name ? p.street : null, p.city, p.state].filter(Boolean).join(", ");
+  return { main: main || sub, sub };
+}
+async function photon(q, limit) {
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${C.center[0]}&lon=${C.center[1]}&limit=${limit}`;
+  const j = await (await fetch(url)).json();
+  return (j.features || []).filter(f => { const [lon,lat] = f.geometry.coordinates; return inCity(lat, lon); });
+}
+function placePin(f) {
+  const [lon,lat] = f.geometry.coordinates;
+  const lbl = photonLabel(f.properties);
+  map.flyTo([lat,lon], 15, { duration:1.0 });
+  if (searchMarker) searchMarker.remove();
+  searchMarker = L.circleMarker([lat,lon], { radius:8, color:"#d6ff3a", weight:2, fillColor:"#d6ff3a", fillOpacity:0.4 })
+    .addTo(map).bindPopup([lbl.main, lbl.sub].filter(Boolean).join(", ")).openPopup();
+}
+async function doSearch() {
+  const q = document.getElementById("addr").value.trim();
+  const err = document.getElementById("addrerr"); err.textContent = "";
+  if (!q) return;
+  try { const feats = await photon(q, 5); if (!feats.length) { err.textContent = `No ${C.name} match. Try a street address.`; return; } placePin(feats[0]); }
+  catch (e) { err.textContent = "Search failed — try again."; }
+}
+document.getElementById("addrgo").addEventListener("click", () => { hideAC(); doSearch(); });
+
+const acInput = document.getElementById("addr");
+const acList = document.getElementById("aclist");
+let acTimer = null, acItems = [], acIdx = -1;
+function hideAC(){ acList.classList.remove("open"); acList.innerHTML=""; acItems=[]; acIdx=-1; }
+function renderAC(features) {
+  acItems = features; acIdx = -1;
+  acList.innerHTML = features.map((f,i) => { const l = photonLabel(f.properties); return `<div class="ac-item" data-i="${i}">${l.main}${l.sub?`<span class="ac-sub">${l.sub}</span>`:""}</div>`; }).join("");
+  acList.classList.toggle("open", features.length > 0);
+  acList.querySelectorAll(".ac-item").forEach(el => el.addEventListener("mousedown", e => { e.preventDefault(); selectAC(parseInt(el.dataset.i,10)); }));
+}
+function selectAC(i){ if(i<0||i>=acItems.length) return; const f=acItems[i]; acInput.value=photonLabel(f.properties).main; hideAC(); placePin(f); }
+async function fetchAC(q){ try { renderAC(await photon(q,6)); } catch(e){ hideAC(); } }
+acInput.addEventListener("input", () => { const q=acInput.value.trim(); clearTimeout(acTimer); if(q.length<3){hideAC();return;} acTimer=setTimeout(()=>fetchAC(q),220); });
+acInput.addEventListener("keydown", e => {
+  if (e.key==="ArrowDown" && acItems.length){ e.preventDefault(); acIdx=Math.min(acIdx+1,acItems.length-1); acList.querySelectorAll(".ac-item").forEach((el,i)=>el.classList.toggle("active",i===acIdx)); }
+  else if (e.key==="ArrowUp" && acItems.length){ e.preventDefault(); acIdx=Math.max(acIdx-1,0); acList.querySelectorAll(".ac-item").forEach((el,i)=>el.classList.toggle("active",i===acIdx)); }
+  else if (e.key==="Enter"){ e.preventDefault(); if(acIdx>=0) selectAC(acIdx); else { hideAC(); doSearch(); } }
+  else if (e.key==="Escape") hideAC();
+});
+acInput.addEventListener("blur", () => setTimeout(hideAC, 120));
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+window.CITY = {
+  name: "New York City",
+  crimeSource: "violent crime NYPD recorded",
+  crimeCats: "NYPD complaints for felony assault, misdemeanor assault, robbery and murder",
+  lightingDesc: "Calibrated nighttime radiance (nW/cm²/sr) from NASA's VIIRS Black Marble annual composite (VNP46A4, 2023 — the same product and year used for every city in this atlas), sampled per hex, log-scaled and split into terciles.",
+  lightingShort: "VIIRS annual radiance, 2023",
+  geocodeCaveat: "NYPD moves each complaint to the midpoint of the nearest cross-street for privacy, so crime points are snapped to intersections, not exact locations.",
+  denseArea: "Midtown and Times Square",
+  bounds: [[40.49, -74.26], [40.92, -73.70]],
+  center: [40.71, -73.96],
+  zoom: 11,
+  minZoom: 10,
+  geoBox: { s: 40.49, n: 40.92, w: -74.26, e: -73.70 },
+  staleNote: "Crime and 311 cover Jan 2024 – Mar 2026; the lighting layer is the 2023 VIIRS annual composite — the same product and year used for every city here, so the five are directly comparable (nighttime lights change little year to year).",
+};

@@ -79,8 +79,8 @@
 <div class="info-bg" id="infoBg">
   <div class="info">
     <h2>About this atlas</h2>
-    <p>New York City's street-lighting maps, shown large above, are the originals. The four smaller maps — <b>Chicago, Philadelphia, Baltimore and Los Angeles</b> — adapt the same method to each city's open data. Click any mini map to load it into the main view and explore it; click "open" to view it on its own.</p>
-    <p><b>Darkness × crime</b> crosses calibrated nighttime satellite radiance (the Visible Infrared Imaging Radiometer Suite, VIIRS, Black Marble composite) with violent crime. <b>311 × crime</b> crosses resident-reported streetlight-outage complaints with violent crime. Within each city map the two layers share the same time window.</p>
+    <p>New York City is the main view; the four smaller maps — <b>Chicago, Philadelphia, Baltimore and Los Angeles</b> — adapt the same method to each city's open data. Click any mini map to load it into the main view and explore it; click "open" to view it on its own.</p>
+    <p><b>Darkness × crime</b> crosses calibrated nighttime satellite radiance (the Visible Infrared Imaging Radiometer Suite, VIIRS, Black Marble VNP46A4 2023 composite) with violent crime. So all five cities are strictly comparable, New York's darkness layer here is rebuilt from that <b>same</b> Black Marble source as the others — not the original NYC raster. <b>311 × crime</b> crosses resident-reported streetlight-outage complaints with violent crime; that view uses New York's original published map. Within each city map the two layers share the same time window.</p>
     <p>The comparison-city maps are drafts for review, not published work.</p>
     <button class="close" id="infoClose">Close</button>
   </div>
@@ -90,7 +90,7 @@
 const CONFIG = {
   satellite: {
     maps: [
-      { name:"New York City", note:"original", url:"https://vitalcity-nyc.github.io/street-lighting-map/" },
+      { name:"New York City", note:"VIIRS 2023", url:"nyc/satellite.html" },
       { name:"Chicago", url:"chicago/satellite.html" },
       { name:"Philadelphia", url:"philadelphia/satellite.html" },
       { name:"Baltimore", url:"baltimore/satellite.html" },

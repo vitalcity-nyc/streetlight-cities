@@ -53,9 +53,9 @@
 <body>
 <div class="wrap">
   <div class="kicker">Rubber meets road<span class="sep">/</span><span class="k2">Lighting: darkness, crime and 311, multi-city</span></div>
-  <h1>Where <em>darkness, broken lights and crime</em> overlap — four cities</h1>
-  <p class="lede">Prototype maps adapting New York City's street-lighting tools to Chicago, Philadelphia, Baltimore and Los Angeles. Each city has two companion maps built from open data on a shared hexagon grid.</p>
-  <p class="note">These are drafts for review, not published work. Within each map the two data layers share the same time window; windows differ between cities because the available data does (Baltimore and Los Angeles crime feeds stop at the end of 2024 and 2023 respectively).</p>
+  <h1>Where <em>darkness, broken lights and crime</em> overlap — five cities</h1>
+  <p class="lede">Prototype maps adapting New York City's street-lighting tools to Chicago, Philadelphia, Baltimore and Los Angeles. New York is included too — its darkness layer rebuilt from the same satellite source, so all five are directly comparable. Each city has two companion maps built from open data on a shared hexagon grid.</p>
+  <p class="note">These are drafts for review, not published work. Within each map the two data layers share the same time window; windows differ between cities because the available data does (Baltimore and Los Angeles crime feeds stop at the end of 2024 and 2023 respectively). The darkness layer everywhere is NASA's VIIRS Black Marble 2023 composite.</p>
 
   <div class="legend2">
     <div class="l2">
@@ -78,6 +78,7 @@
 
 <script>
 const CITIES = [
+  { name:"New York City", dir:"nyc", win:"Jan 2024 – Mar 2026", hex:"6,009", a:"50,856", c:"107,930" },
   { name:"Chicago", dir:"chicago", win:"Jan 2023 – Apr 2026", hex:"859", a:"148,212", c:"94,781" },
   { name:"Philadelphia", dir:"philadelphia", win:"Jan 2023 – Apr 2026", hex:"530", a:"33,561", c:"126,727" },
   { name:"Baltimore", dir:"baltimore", win:"Jan 2023 – Dec 2024", hex:"364", a:"31,496", c:"40,901" },

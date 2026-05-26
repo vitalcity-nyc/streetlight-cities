@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where darkness and crime overlap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --vc-black:#050507; --vc-white:#fff; --vc-chartreuse:#dde44c; --vc-orange:#ff7c53;
+    --vc-magenta:#e7466d; --vc-periwinkle:#9b9fbc; --vc-cerulean:#217ebe; --vc-indigo:#394882;
+    --font-primary:'Helvetica Neue', Arial, sans-serif; --font-secondary:Georgia,'Times New Roman',serif;
+    --panel-bg:rgba(5,5,7,0.92); --panel-border:rgba(255,255,255,0.1);
+    --text-primary:rgba(255,255,255,0.9); --text-secondary:rgba(255,255,255,0.5); --text-dim:rgba(255,255,255,0.3);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;padding:0;width:100vw;height:100vh;background:var(--vc-black);color:var(--vc-white);font-family:var(--font-primary);-webkit-font-smoothing:antialiased;overflow:hidden;}
+  #map{position:absolute;inset:0;z-index:1;background:#050507;}
+  .leaflet-container{background:#050507;}
+
+  .control-panel{position:absolute;top:16px;left:16px;z-index:50;width:384px;max-width:calc(100vw - 32px);
+    background:var(--panel-bg);backdrop-filter:blur(14px);border:1px solid var(--panel-border);
+    border-top:3px solid var(--vc-chartreuse);max-height:calc(100vh - 32px);overflow-y:auto;transition:all .3s;}
+  .control-panel.collapsed .cp-body{display:none;}
+  .control-panel.collapsed{width:300px;}
+  .cp-header{padding:14px 20px 10px;position:relative;}
+  .cp-collapse,.cp-info-btn{position:absolute;top:10px;background:none;border:none;color:var(--text-secondary);cursor:pointer;transition:color .15s;}
+  .cp-collapse{right:8px;font-size:16px;padding:4px 8px;}
+  .cp-info-btn{right:36px;border:1px solid var(--panel-border);font-size:11px;font-weight:900;width:22px;height:22px;border-radius:50%;font-family:var(--font-secondary);font-style:italic;}
+  .cp-collapse:hover,.cp-info-btn:hover{color:var(--vc-chartreuse);border-color:var(--vc-chartreuse);}
+  .cp-label{font-size:10px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:var(--vc-chartreuse);margin-bottom:10px;}
+  .cp-label-rest{color:rgba(255,255,255,0.85);font-weight:700;}
+  .cp-label-slash{color:rgba(255,255,255,0.45);font-weight:400;margin:0 6px;}
+  .cp-title{font-size:34px;font-weight:900;line-height:1.05;letter-spacing:-0.02em;margin:0 0 12px;padding-right:60px;}
+  .cp-title em{font-style:normal;}
+  .cp-desc{font-family:var(--font-secondary);font-size:14px;color:#c8c8d0;line-height:1.5;margin-bottom:0;}
+  .cp-desc b{color:var(--vc-chartreuse);font-weight:700;font-family:var(--font-primary);}
+  .stale{font-size:11px;color:var(--vc-orange);border:1px solid rgba(255,124,83,0.4);background:rgba(255,124,83,0.08);padding:7px 9px;margin:12px 20px 0;}
+
+  .stat-bar{display:flex;gap:1px;margin-top:14px;background:rgba(255,255,255,0.04);border-top:1px solid var(--panel-border);border-bottom:1px solid var(--panel-border);}
+  .stat-item{flex:1;padding:12px 16px;text-align:center;}
+  .stat-item+.stat-item{border-left:1px solid var(--panel-border);}
+  .stat-val{font-family:var(--font-secondary);font-size:24px;font-weight:700;line-height:1;}
+  .stat-val.highlight{color:var(--vc-magenta);}
+  .stat-val.chartreuse{color:var(--vc-chartreuse);}
+  .stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-top:5px;}
+
+  .thresholds{padding:16px 20px 6px;}
+  .threshold-row{margin-bottom:14px;}
+  .thresh-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .thresh-label{font-size:11px;font-weight:800;color:var(--text-primary);}
+  .thresh-value{font-size:11px;font-weight:800;padding:2px 8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);}
+  .light-val{color:var(--vc-chartreuse);} .crime-val{color:var(--vc-magenta);}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:0;outline:none;margin:6px 0;
+    background:linear-gradient(to right,var(--barfill,#888) 0%,var(--barfill,#888) var(--fill,50%),rgba(255,255,255,0.12) var(--fill,50%),rgba(255,255,255,0.12) 100%);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--vc-white);border:2px solid var(--vc-black);cursor:pointer;}
+  .light-slider{--barfill:var(--vc-chartreuse);} .crime-slider{--barfill:var(--vc-magenta);}
+  .thresh-ends{display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;}
+
+  .presets{display:flex;gap:8px;padding:0 20px 14px;}
+  .preset-btn{flex:1;text-align:center;padding:8px 6px;font-size:10px;font-weight:800;letter-spacing:0.03em;text-transform:uppercase;
+    background:rgba(255,255,255,0.04);border:1px solid var(--panel-border);color:var(--text-secondary);cursor:pointer;transition:all .15s;}
+  .preset-btn:hover{color:var(--vc-white);} .preset-btn.active{background:var(--vc-magenta);color:var(--vc-black);border-color:var(--vc-magenta);}
+
+  .modes{display:flex;gap:1px;margin:0 20px 14px;border:1px solid var(--panel-border);}
+  .mode-btn{flex:1;text-align:center;padding:8px 4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.03em;
+    background:rgba(255,255,255,0.03);color:var(--text-secondary);cursor:pointer;}
+  .mode-btn.active{background:var(--vc-chartreuse);color:var(--vc-black);}
+
+  .geocoder-row{padding:0 20px 12px;position:relative;}
+  .geocoder-row input{width:100%;background:#0a0a0c;color:var(--vc-white);border:1px solid #2a2a32;padding:9px 10px;font-size:12px;font-family:inherit;}
+  .geocoder-row input:focus{outline:none;border-color:var(--vc-chartreuse);}
+  .ac-list{position:absolute;left:20px;right:20px;top:100%;margin-top:-8px;z-index:60;background:#0d0d12;border:1px solid #2a2a32;max-height:220px;overflow-y:auto;display:none;}
+  .ac-list.open{display:block;}
+  .ac-item{padding:7px 10px;font-size:12px;color:#dcdce2;cursor:pointer;border-bottom:1px solid #1d1d24;}
+  .ac-item:hover{background:#1d1d24;color:#fff;} .ac-item .ac-sub{display:block;font-size:10px;color:#8a8a96;}
+
+  .cp-311-toggle{display:flex;align-items:flex-start;gap:9px;padding:0 20px 14px;cursor:pointer;}
+  .cp-311-toggle input{margin-top:2px;accent-color:var(--vc-magenta);}
+  .cp-311-swatch{width:12px;height:12px;border-radius:50%;background:#ffb020;box-shadow:0 0 6px rgba(255,176,32,.9);margin-top:2px;flex-shrink:0;}
+  .cp-311-text b{font-size:11.5px;color:var(--text-primary);} .cp-311-hint{display:block;font-size:10px;color:var(--text-dim);margin-top:1px;}
+
+  .cp-about{margin:0 20px 16px;display:flex;gap:8px;}
+  .cp-about button{flex:1;padding:8px 10px;font-family:var(--font-primary);font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;}
+  .cp-about .about-1{background:rgba(221,228,76,0.08);border:1px solid rgba(221,228,76,0.3);color:var(--vc-chartreuse);}
+  .cp-credit{padding:0 20px 16px;font-size:10px;line-height:1.5;color:var(--text-secondary);}
+
+  .share-btn{position:absolute;top:16px;right:16px;z-index:45;background:var(--panel-bg);backdrop-filter:blur(14px);border:1px solid var(--panel-border);color:var(--text-primary);font-family:var(--font-primary);font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:10px 14px;cursor:pointer;transition:all .2s;}
+  .share-btn:hover,.share-btn.copied{background:var(--vc-chartreuse);color:var(--vc-black);border-color:var(--vc-chartreuse);}
+
+  .legend{position:absolute;bottom:64px;right:16px;z-index:40;background:var(--panel-bg);border:1px solid var(--panel-border);padding:10px 12px;font-size:10px;color:var(--text-secondary);}
+  .legend-title{font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:6px;}
+  .legend-ramp{height:8px;width:140px;margin:4px 0;} .legend-ends{display:flex;justify-content:space-between;}
+  .legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--vc-magenta);margin-right:5px;vertical-align:middle;}
+
+  /* hotspot drawer */
+  .hotspot-drawer{position:absolute;left:0;right:0;bottom:0;z-index:42;background:var(--panel-bg);backdrop-filter:blur(14px);border-top:1px solid var(--panel-border);transition:transform .3s;}
+  .hotspot-drawer.collapsed{transform:translateY(calc(100% - 52px));}
+  .drawer-handle{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;cursor:pointer;height:52px;}
+  .drawer-handle-left{display:flex;align-items:center;gap:12px;}
+  .drawer-badge{background:var(--vc-magenta);color:var(--vc-black);font-weight:900;font-size:13px;padding:3px 9px;min-width:30px;text-align:center;}
+  .drawer-title{font-size:12px;font-weight:800;} .drawer-subtitle{font-size:10px;color:var(--text-dim);}
+  .drawer-toggle{background:none;border:1px solid var(--panel-border);color:var(--text-secondary);font-family:var(--font-primary);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;padding:7px 12px;cursor:pointer;}
+  .drawer-body{height:172px;display:flex;flex-direction:column;}
+  .hotspot-scroll{flex:1;display:flex;gap:10px;overflow-x:auto;padding:6px 18px 10px;}
+  .hotspot-card{flex:0 0 220px;background:rgba(255,255,255,0.04);border:1px solid var(--panel-border);border-left:3px solid var(--vc-magenta);padding:12px 14px;cursor:pointer;transition:all .15s;}
+  .hotspot-card:hover{background:rgba(231,70,109,0.12);}
+  .hotspot-rank{font-size:9px;font-weight:900;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;}
+  .hotspot-name{font-size:14px;font-weight:800;margin:3px 0 8px;line-height:1.2;}
+  .hotspot-stat{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+  .hotspot-stat .k{color:var(--text-secondary);} .hotspot-stat .v{font-weight:800;}
+  .tour-controls{display:flex;gap:8px;padding:0 18px 12px;}
+  .tour-btn{background:rgba(255,255,255,0.04);border:1px solid var(--panel-border);color:var(--text-secondary);font-family:var(--font-primary);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;padding:7px 12px;cursor:pointer;}
+  .tour-btn-fly{background:var(--vc-chartreuse);color:var(--vc-black);border-color:var(--vc-chartreuse);}
+  .tour-btn:disabled{opacity:0.4;cursor:default;}
+
+  .info-modal-bg{position:fixed;inset:0;z-index:200;background:rgba(5,5,7,0.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:24px;}
+  .info-modal-bg.open{display:flex;}
+  .info-modal{background:var(--panel-bg);border:1px solid var(--panel-border);border-top:3px solid var(--vc-chartreuse);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;padding:28px 32px;}
+  .info-modal h2{font-size:20px;font-weight:900;margin:0 0 14px;}
+  .info-modal h3{font-size:11px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--vc-chartreuse);margin:18px 0 6px;}
+  .info-modal p,.info-modal ul{font-family:var(--font-secondary);font-size:13px;line-height:1.6;color:var(--text-primary);margin:0 0 10px;}
+  .info-modal ul{padding-left:18px;} .info-modal li{margin-bottom:4px;}
+  .info-modal-close{background:none;border:1px solid var(--panel-border);color:var(--text-secondary);font-family:var(--font-primary);font-size:10px;font-weight:800;padding:8px 16px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;margin-top:14px;}
+  .info-modal-close:hover{color:var(--vc-chartreuse);border-color:var(--vc-chartreuse);}
+
+  .vc-source{position:absolute;bottom:0;right:0;z-index:35;background:rgba(5,5,7,0.85);backdrop-filter:blur(6px);padding:6px 12px;font-size:10px;color:var(--text-dim);}
+  .hotspot-drawer:not(.collapsed)~.vc-source{display:none;}
+  .vc-source .vc-tag{font-weight:900;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--vc-chartreuse);}
+  .vc-source .vc-pipe{margin:0 6px;color:rgba(255,255,255,0.1);}
+
+  .tt{font-family:var(--font-primary);min-width:170px;}
+  .tt-header{font-weight:900;font-size:9px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.06em;}
+  .tt-header.flagged{color:var(--vc-magenta);}
+  .tt-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:3px;}
+  .tt-label{color:var(--text-secondary);font-size:11px;} .tt-val{font-weight:800;font-size:13px;}
+  .tt-rank{font-size:9px;font-weight:700;text-transform:uppercase;padding:1px 5px;margin-left:5px;}
+  .tt-bar-bg{height:5px;background:rgba(255,255,255,0.08);margin:2px 0 9px;overflow:hidden;} .tt-bar-fg{height:100%;}
+  .tt-action{margin-top:6px;font-size:10px;font-weight:800;color:var(--vc-chartreuse);text-transform:uppercase;letter-spacing:0.04em;}
+  .leaflet-popup-content-wrapper,.leaflet-tooltip{background:#0d0d12;color:var(--vc-white);border:1px solid #2a2a32;border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+  .leaflet-tooltip{padding:10px 12px;} .leaflet-tooltip:before{display:none;}
+  .chronic-pulse .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:#ffb020;box-shadow:0 0 6px rgba(255,176,32,.9);}
+  .chronic-pulse .ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;border:2px solid #ffb020;animation:cp 1.6s ease-out infinite;}
+  @keyframes cp{0%{width:9px;height:9px;opacity:.95;}100%{width:40px;height:40px;opacity:0;}}
+  .leaflet-control-zoom{display:none;}
+  @media(max-width:820px){.control-panel{width:calc(100vw - 32px);}.share-btn{display:none;}.hotspot-card{flex:0 0 190px;}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="control-panel" id="controlPanel">
+  <div class="cp-header">
+    <button class="cp-info-btn" id="infoBtn" title="About this map">i</button>
+    <button class="cp-collapse" id="cpCollapse" title="Collapse">&minus;</button>
+    <div class="cp-label">Rubber meets road<span class="cp-label-slash">/</span><span class="cp-label-rest" id="kicker-rest"></span></div>
+    <h1 class="cp-title" id="cp-title"></h1>
+    <p class="cp-desc" id="cp-desc"></p>
+  </div>
+  <div class="stale" id="stale" style="display:none"></div>
+  <div class="cp-body">
+    <div class="stat-bar">
+      <div class="stat-item"><div class="stat-val highlight" id="statCells">&mdash;</div><div class="stat-label">Cells flagged</div></div>
+      <div class="stat-item"><div class="stat-val chartreuse" id="statPct">&mdash;</div><div class="stat-label">of all cells</div></div>
+    </div>
+    <div class="thresholds">
+      <div class="threshold-row">
+        <div class="thresh-header"><span class="thresh-label">Lighting no brighter than</span><span class="thresh-value light-val" id="lightValDisplay"></span></div>
+        <input type="range" class="light-slider" id="lightSlider" min="0" max="100" step="1" value="50">
+        <div class="thresh-ends"><span>Brightest</span><span>Darkest</span></div>
+      </div>
+      <div class="threshold-row">
+        <div class="thresh-header"><span class="thresh-label">Crime no lower than</span><span class="thresh-value crime-val" id="crimeValDisplay"></span></div>
+        <input type="range" class="crime-slider" id="crimeSlider" min="0" max="100" step="1" value="80">
+        <div class="thresh-ends"><span>Lowest</span><span>Highest</span></div>
+      </div>
+    </div>
+    <div class="presets">
+      <div class="preset-btn" id="preset-dark">Dark &amp; dangerous</div>
+      <div class="preset-btn" id="preset-bright">Bright &amp; high crime</div>
+    </div>
+    <div class="modes">
+      <div class="mode-btn active" data-mode="overlap">Overlap</div>
+      <div class="mode-btn" data-mode="crime">Crime density</div>
+      <div class="mode-btn" data-mode="light">Lighting</div>
+    </div>
+    <div class="geocoder-row">
+      <input id="addr" type="text" placeholder="Search an address&hellip;" autocomplete="off">
+      <div class="ac-list" id="aclist"></div>
+    </div>
+    <label class="cp-311-toggle" id="chronicToggleWrap" title="Locations with the most 311 streetlight complaints in the crime window — chronic dark or broken-light hotspots.">
+      <input type="checkbox" id="chronicToggle" checked>
+      <span class="cp-311-swatch"></span>
+      <span class="cp-311-text"><b>View chronic 311 streetlight complaint hotspots</b><span class="cp-311-hint" id="chronicHint">Top reported spots</span></span>
+    </label>
+    <div class="cp-about">
+      <button class="about-1" id="aboutBtn2">About this map</button>
+    </div>
+    <div class="cp-credit" id="credit"></div>
+  </div>
+</div>
+
+<button class="share-btn" id="shareBtn">&#x1F517; Share</button>
+
+<div class="legend" id="legend"></div>
+
+<div class="hotspot-drawer collapsed" id="hotspotDrawer">
+  <div class="drawer-handle" id="drawerHandle">
+    <div class="drawer-handle-left">
+      <div class="drawer-badge" id="drawerBadge">--</div>
+      <div><div class="drawer-title">Locations flagged for review</div><div class="drawer-subtitle">Click a card to fly there. Ranked by combined severity.</div></div>
+    </div>
+    <button class="drawer-toggle" id="drawerToggle">Show list &#x25B4;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="hotspot-scroll" id="hotspotScroll"></div>
+    <div class="tour-controls">
+      <button class="tour-btn tour-btn-fly" id="startTourBtn">&#9654; Fly tour</button>
+      <button class="tour-btn" id="tourPrev" disabled>&larr; Prev</button>
+      <button class="tour-btn" id="tourNext" disabled>Next &rarr;</button>
+      <button class="tour-btn" id="tourStop" disabled style="color:var(--vc-magenta)">Stop</button>
+    </div>
+  </div>
+</div>
+
+<div class="info-modal-bg" id="infoModal">
+  <div class="info-modal">
+    <h2>About this map</h2>
+    <p id="im-intro"></p>
+    <h3>Time period</h3>
+    <p id="im-time"></p>
+    <h3>How the overlap is calculated</h3>
+    <p id="im-method"></p>
+    <h3>Chronic 311 streetlight complaints</h3>
+    <p id="im-311"></p>
+    <h3>Data sources</h3>
+    <ul id="im-sources"></ul>
+    <h3>Limitations</h3>
+    <p id="im-limits"></p>
+    <button class="info-modal-close" id="infoClose">Close</button>
+  </div>
+</div>
+
+<div class="vc-source"><span class="vc-tag">Rubber meets road</span><span class="vc-pipe">|</span><b id="src-line"></b></div>
+
+<script src="config-sat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const C = window.CITY, $ = id => document.getElementById(id);
+
+/* ---- copy ---- */
+document.title = C.name + ": where darkness and crime overlap";
+$('kicker-rest').textContent = "Lighting: darkness and crime, mapped — " + C.name;
+$('cp-title').innerHTML = `${C.name}: where <em>darkness and crime</em> overlap`;
+$('credit').textContent = "Lighting from NASA's VIIRS Black Marble nighttime-radiance satellite composite, crossed with police-reported violent crime on a hex grid.";
+if (C.staleNote) { $('stale').textContent = C.staleNote; $('stale').style.display = "block"; }
+
+/* ---- map ---- */
+const BOUNDS = L.latLngBounds(C.bounds[0], C.bounds[1]);
+const map = L.map('map', { zoomControl:false, preferCanvas:true, maxBounds:BOUNDS.pad(0.1),
+  maxBoundsViscosity:0.8, minZoom:C.minZoom||9, zoomSnap:0.5, zoomDelta:0.5 });
+const hashP = new URLSearchParams(location.hash.slice(1));
+let lPct = Number(hashP.get('l')) || 50, cPct = Number(hashP.get('c')) || 80;
+map.setView(C.center, C.zoom);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+map.createPane('labels'); map.getPane('labels').style.zIndex=450; map.getPane('labels').style.pointerEvents='none';
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{maxZoom:19,pane:'labels'}).addTo(map);
+
+/* ---- helpers ---- */
+function rankLabel(pct, type) {
+  if (pct == null) return null;
+  if (type === 'crime') {
+    if (pct>=95) return {t:'Top 5%',c:'#d2232a'}; if (pct>=90) return {t:'Top 10%',c:'#ff7c53'};
+    if (pct>=75) return {t:'Top 25%',c:'#f69577'}; if (pct>=50) return {t:'Above median',c:'#fabcaa'};
+    return {t:'Below median',c:'#9b9fbc'};
+  }
+  if (pct<=10) return {t:'Very dark',c:'#394882'}; if (pct<=25) return {t:'Dark',c:'#4e98cb'};
+  if (pct<=50) return {t:'Below median',c:'#9b9fbc'}; return {t:'Well lit',c:'#dde44c'};
+}
+function lerp(stops, t){ // stops: [[pos,'#hex']...]; t 0..1
+  for (let i=1;i<stops.length;i++){ if (t<=stops[i][0]){ const a=stops[i-1],b=stops[i];
+    const f=(t-a[0])/(b[0]-a[0]||1); return mix(a[1],b[1],f);} } return stops[stops.length-1][1];
+}
+function mix(h1,h2,f){const a=hx(h1),b=hx(h2);return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;}
+function hx(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+const CRIME_RAMP=[[0,'#fee5d9'],[0.5,'#fb6a4a'],[1,'#a50f15']];
+const LIGHT_RAMP=[[0,'#252525'],[1,'#f7f7f7']];
+function centroid(ring){const p=ring.slice(0,-1);return [p.reduce((s,x)=>s+x[1],0)/p.length, p.reduce((s,x)=>s+x[0],0)/p.length];}
+
+let META, geo, mode='overlap', chronicLayer=null, FEATS=[];
+function flagged(p){ return p.light_pctl!=null && p.crime_pctl!=null && p.light_pctl<=lPct && p.crime_pctl>=cPct; }
+function styleFor(p){
+  if (mode==='crime'){ const t=(p.crime_pctl||0)/100; return {color:'#0a0a0c',weight:0.2,fillColor:lerp(CRIME_RAMP,t),fillOpacity:p.crime_n?0.72:0}; }
+  if (mode==='light'){ const t=(p.light_pctl||0)/100; return {color:'#0a0a0c',weight:0.2,fillColor:lerp(LIGHT_RAMP,t),fillOpacity:p.light_n!=null?0.72:0}; }
+  return flagged(p) ? {color:'#e7466d',weight:0.6,fillColor:'#e7466d',fillOpacity:0.82}
+                    : {color:'#3a3a44',weight:0.2,fillColor:'#6a6a78',fillOpacity:0.05};
+}
+function tipHtml(p){
+  const fl = mode==='overlap' && flagged(p);
+  const cr = rankLabel(p.crime_pctl,'crime'), lr = rankLabel(p.light_pctl,'light');
+  const place = p.nta ? `<div style="font-weight:800;font-size:13px;margin-bottom:7px">${p.nta}<span style="color:#8a8a96;font-weight:400"> · ${p.boro}</span></div>` : '';
+  return `<div class="tt"><div class="tt-header ${fl?'flagged':''}">${fl?'Flagged cell':'Grid cell'}</div>${place}
+    <div class="tt-row"><span class="tt-label">Violent crime</span><span><span class="tt-val">${p.crime_n}</span>${cr?`<span class="tt-rank" style="background:${cr.c}22;color:${cr.c}">${cr.t}</span>`:''}</span></div>
+    <div class="tt-bar-bg"><div class="tt-bar-fg" style="width:${p.crime_pctl||0}%;background:${(p.crime_pctl||0)>80?'#ff7c53':'#e7466d'}"></div></div>
+    <div class="tt-row"><span class="tt-label">Avg lighting</span><span><span class="tt-val">${p.light_n!=null?p.light_n:'—'}</span>${lr?`<span class="tt-rank" style="background:${lr.c}22;color:${lr.c}">${lr.t}</span>`:''}</span></div>
+    <div class="tt-bar-bg"><div class="tt-bar-fg" style="width:${p.light_pctl||0}%;background:#dde44c"></div></div>
+    ${fl?'<div class="tt-action">Candidate for on-the-ground review</div>':''}</div>`;
+}
+
+/* ---- legend ---- */
+function renderLegend(){
+  const el=$('legend');
+  if (mode==='overlap'){ el.innerHTML=`<div class="legend-title">Flagged cells</div><span class="legend-dot"></span>Dark & high-crime`; }
+  else if (mode==='crime'){ el.innerHTML=`<div class="legend-title">Violent crime</div><div class="legend-ramp" style="background:linear-gradient(to right,#fee5d9,#fb6a4a,#a50f15)"></div><div class="legend-ends"><span>Low</span><span>High</span></div>`; }
+  else { el.innerHTML=`<div class="legend-title">Nighttime lighting</div><div class="legend-ramp" style="background:linear-gradient(to right,#252525,#f7f7f7)"></div><div class="legend-ends"><span>Darkest</span><span>Brightest</span></div>`; }
+}
+
+/* ---- sliders / flagging ---- */
+function qLookup(arr,p){ return arr ? arr[Math.max(0,Math.min(100,Math.round(p)))] : null; }
+function applyFilter(){
+  $('lightSlider').style.setProperty('--fill',lPct+'%');
+  $('crimeSlider').style.setProperty('--fill',cPct+'%');
+  const lReal=qLookup(META.lightingQ,lPct), cReal=qLookup(META.crimeQ,cPct);
+  $('lightValDisplay').innerHTML=(lReal!=null?'≤ '+lReal+' nw':'')+' · '+lPct+'th pctl';
+  $('crimeValDisplay').innerHTML=(cReal!=null?'≥ '+Math.round(cReal)+' crimes':'')+' · '+cPct+'th pctl';
+  let n=0; FEATS.forEach(f=>{ if(flagged(f.properties)) n++; });
+  $('statCells').textContent=n.toLocaleString();
+  $('statPct').textContent=META.n_cells?((n/META.n_cells*100).toFixed(1)+'%'):'—';
+  $('drawerBadge').textContent=n.toLocaleString();
+  if (geo) geo.setStyle(f=>styleFor(f.properties));
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  if (lPct===50&&cPct===90) $('preset-dark').classList.add('active');
+  if (lPct===100&&cPct===95) $('preset-bright').classList.add('active');
+  buildHotspots();
+  const pr=new URLSearchParams(); pr.set('l',lPct); pr.set('c',cPct);
+  history.replaceState(null,'','#'+pr.toString());
+}
+$('lightSlider').addEventListener('input',e=>{lPct=+e.target.value;applyFilter();});
+$('crimeSlider').addEventListener('input',e=>{cPct=+e.target.value;applyFilter();});
+$('preset-dark').addEventListener('click',()=>{lPct=50;cPct=90;$('lightSlider').value=50;$('crimeSlider').value=90;applyFilter();});
+$('preset-bright').addEventListener('click',()=>{lPct=100;cPct=95;$('lightSlider').value=100;$('crimeSlider').value=95;applyFilter();});
+
+/* ---- view modes ---- */
+document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); mode=b.dataset.mode;
+  if (geo) geo.setStyle(f=>styleFor(f.properties));
+  renderLegend();
+}));
+
+/* ---- hotspot drawer ---- */
+let TOUR=[], tourIdx=-1;
+function buildHotspots(){
+  const flags=FEATS.filter(f=>flagged(f.properties)).map(f=>{
+    const p=f.properties; return {p, c:centroid(f.geometry.coordinates[0]),
+      sev:(p.crime_pctl||0)+(100-(p.light_pctl||0))};
+  }).sort((a,b)=>b.sev-a.sev).slice(0,30);
+  TOUR=flags;
+  const sc=$('hotspotScroll');
+  if (!flags.length){ sc.innerHTML='<div style="color:var(--text-dim);font-size:12px;padding:14px">No cells meet both thresholds. Loosen the sliders.</div>'; return; }
+  sc.innerHTML=flags.map((h,i)=>{
+    const p=h.p, cr=rankLabel(p.crime_pctl,'crime'), lr=rankLabel(p.light_pctl,'light');
+    return `<div class="hotspot-card" data-i="${i}"><div class="hotspot-rank">#${i+1} · severity ${Math.round(h.sev)}</div>
+      <div class="hotspot-name">${p.nta||'Grid cell'}</div>
+      <div class="hotspot-stat"><span class="k">Violent crime</span><span class="v" style="color:${cr.c}">${p.crime_n} · ${cr.t}</span></div>
+      <div class="hotspot-stat"><span class="k">Lighting</span><span class="v" style="color:${lr.c}">${p.light_n} nw · ${lr.t}</span></div></div>`;
+  }).join('');
+  sc.querySelectorAll('.hotspot-card').forEach(el=>el.addEventListener('click',()=>flyTo(+el.dataset.i)));
+}
+function flyTo(i){ if(i<0||i>=TOUR.length)return; tourIdx=i; map.flyTo(TOUR[i].c,15,{duration:1.1});
+  document.querySelectorAll('.hotspot-card').forEach((el,j)=>el.style.outline=j===i?'2px solid var(--vc-chartreuse)':'none');
+  $('tourPrev').disabled=i<=0; $('tourNext').disabled=i>=TOUR.length-1; $('tourStop').disabled=false; }
+$('startTourBtn').addEventListener('click',()=>{ if(TOUR.length){ if($('hotspotDrawer').classList.contains('collapsed'))toggleDrawer(); flyTo(0);} });
+$('tourNext').addEventListener('click',()=>flyTo(tourIdx+1));
+$('tourPrev').addEventListener('click',()=>flyTo(tourIdx-1));
+$('tourStop').addEventListener('click',()=>{tourIdx=-1;$('tourPrev').disabled=$('tourNext').disabled=$('tourStop').disabled=true;document.querySelectorAll('.hotspot-card').forEach(el=>el.style.outline='none');});
+function toggleDrawer(){ const d=$('hotspotDrawer'); d.classList.toggle('collapsed'); $('drawerToggle').innerHTML=d.classList.contains('collapsed')?'Show list &#x25B4;':'Hide &#x25BE;'; }
+$('drawerHandle').addEventListener('click',toggleDrawer);
+$('drawerToggle').addEventListener('click',e=>{e.stopPropagation();toggleDrawer();});
+
+/* ---- panel controls ---- */
+$('cpCollapse').addEventListener('click',e=>{e.stopPropagation();const p=$('controlPanel');p.classList.toggle('collapsed');$('cpCollapse').innerHTML=p.classList.contains('collapsed')?'+':'−';});
+$('infoBtn').addEventListener('click',()=>$('infoModal').classList.add('open'));
+$('aboutBtn2').addEventListener('click',()=>$('infoModal').classList.add('open'));
+$('infoClose').addEventListener('click',()=>$('infoModal').classList.remove('open'));
+$('infoModal').addEventListener('click',e=>{if(e.target===$('infoModal'))$('infoModal').classList.remove('open');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('infoModal').classList.remove('open');});
+$('shareBtn').addEventListener('click',()=>{const u=location.href;navigator.clipboard&&navigator.clipboard.writeText(u);const b=$('shareBtn');b.classList.add('copied');b.textContent='✓ Copied';setTimeout(()=>{b.classList.remove('copied');b.innerHTML='🔗 Share';},2000);});
+
+/* ---- data ---- */
+fetch('hexes-sat.geojson').then(r=>r.json()).then(j=>{
+  META=j.meta; FEATS=j.features;
+  $('lightSlider').value=lPct; $('crimeSlider').value=cPct;
+  const cw=`${fmtMonth(META.crime.first_date)} – ${fmtMonth(META.crime.last_date)}`;
+  $('cp-desc').innerHTML=`Each grid cell shows two things at once: <b>how dark it is in nighttime satellite imagery</b>, and <b>how much ${C.crimeSource} in it</b> (${cw}). Use the sliders to set your thresholds for "dark" and "high crime" — cells that meet both are flagged as places worth a closer look.`;
+  $('src-line').textContent=`Source: police violent-crime data and ${META.lighting.source}, ${cw}.`;
+  fillInfo(cw);
+  geo=L.geoJSON(j,{style:f=>styleFor(f.properties),onEachFeature:(f,l)=>l.bindTooltip(tipHtml(f.properties),{sticky:true,direction:'top'})}).addTo(map);
+  applyFilter(); renderLegend();
+});
+fetch('chronic.json').then(r=>r.json()).then(j=>{ CHRONIC=j; if($('chronicToggle').checked) showChronic();
+  if(j.since) $('chronicHint').textContent='Top reported spots since '+fmtMonth(j.since); });
+
+let CHRONIC=null;
+function showChronic(){ if(!CHRONIC)return; chronicLayer=L.layerGroup();
+  CHRONIC.spots.forEach(s=>{ L.marker([s.lat,s.lng],{icon:L.divIcon({className:'chronic-pulse',html:'<div class="ring"></div><div class="core"></div>',iconSize:[9,9],iconAnchor:[5,5]}),zIndexOffset:1000})
+    .bindPopup(`<b style="color:#ffb020">${s.addr}</b><br>${s.borough}<br>${s.count} streetlight complaints`).addTo(chronicLayer); });
+  chronicLayer.addTo(map);
+}
+$('chronicToggle').addEventListener('change',e=>{ if(e.target.checked){if(!chronicLayer)showChronic();else chronicLayer.addTo(map);} else if(chronicLayer)map.removeLayer(chronicLayer); });
+
+function fmtMonth(s){ if(!s)return''; const [y,m]=s.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
+function fillInfo(cw){
+  $('im-intro').textContent=`This tool identifies areas of ${C.name} where violent crime coincides with inadequate street lighting, to help target on-the-ground review and investment.`;
+  $('im-time').textContent=`Crime covers ${cw}. The lighting layer is the ${META.lighting.label}.`;
+  $('im-method').innerHTML=`${C.name} is divided into a hex grid. For each cell we compute the violent-crime percentile (police incident counts) and the nighttime-lighting percentile (calibrated satellite radiance, nanowatts per cm²/sr). The sliders filter to cells where lighting is at or below a chosen percentile <em>and</em> crime is at or above another. ${C.crimeCats} are included; ${C.geocodeCaveat}`;
+  $('im-311').textContent='The 311 layer shows the locations with the most streetlight complaints in the crime window — chronic dark or broken-light spots, not every call.';
+  $('im-sources').innerHTML=`<li>Police violent-crime incidents (assault, robbery, homicide and related)</li><li>NASA Black Marble VNP46A4 annual nighttime radiance (VIIRS), via LAADS DAAC</li><li>311 / service-request streetlight complaints</li>`;
+  $('im-limits').textContent='Satellite radiance is sampled on a ~500 m grid and a hex averages several blocks, so it can mask block-by-block variation and captures all upward light (signage, lots), not streetlights alone. A flagged cell is a candidate for review, not a verdict — go look.';
+}
+
+/* ---- geocoder (Photon) ---- */
+const GB=C.geoBox, acI=$('addr'), acL=$('aclist'); let acItems=[],acT=null,mk;
+function inCity(la,lo){return la>=GB.s&&la<=GB.n&&lo>=GB.w&&lo<=GB.e;}
+async function photon(q){const u=`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${C.center[0]}&lon=${C.center[1]}&limit=6`;
+  const j=await(await fetch(u)).json();return(j.features||[]).filter(f=>{const[lo,la]=f.geometry.coordinates;return inCity(la,lo);});}
+function lbl(p){const m=p.name||[p.housenumber,p.street].filter(Boolean).join(' ')||p.city||'';return{m,s:[p.city,p.state].filter(Boolean).join(', ')};}
+function pin(f){const[lo,la]=f.geometry.coordinates;map.flyTo([la,lo],15,{duration:1});if(mk)mk.remove();mk=L.circleMarker([la,lo],{radius:8,color:'#e7466d',weight:2,fillColor:'#e7466d',fillOpacity:0.4}).addTo(map);}
+acI.addEventListener('input',()=>{const q=acI.value.trim();clearTimeout(acT);if(q.length<3){acL.classList.remove('open');return;}
+  acT=setTimeout(async()=>{acItems=await photon(q);acL.innerHTML=acItems.map((f,i)=>{const l=lbl(f.properties);return`<div class="ac-item" data-i="${i}">${l.m}${l.s?`<span class="ac-sub">${l.s}</span>`:''}</div>`;}).join('');
+    acL.classList.toggle('open',acItems.length>0);acL.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',ev=>{ev.preventDefault();const f=acItems[+el.dataset.i];acI.value=lbl(f.properties).m;acL.classList.remove('open');pin(f);}));},220);});
+acI.addEventListener('blur',()=>setTimeout(()=>acL.classList.remove('open'),150));
+</script>
+</body>
+</html>
