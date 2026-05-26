@@ -81,13 +81,12 @@
     <button data-mode="light">Outage complaints</button>
     <button data-mode="crime">Crime</button>
   </div>
-  <label class="night-toggle" title="When checked, includes daytime crime"><input type="checkbox" id="includeday"><span>Include daytime crime <span class="muted">(default: night only, 8 PM &ndash; 6 AM)</span></span></label>
   <label class="night-toggle" title="Top 20 streetlight 311 hotspots"><input type="checkbox" id="showchronic"><span>Show top 20 chronic complaint spots</span></label>
   <div class="search"><input id="addr" type="text" placeholder="Address or landmark&hellip;" autocomplete="off"><button id="addrgo">Go</button><div class="ac-list" id="aclist"></div></div>
   <div class="search-err" id="addrerr"></div>
   <details><summary>What's being measured</summary><div class="body">
     <p id="measured-crime"></p>
-    <p><b>Default is night only</b> (8 PM &ndash; 6 AM by the incident timestamp). Use the toggle above to add daytime crime back in.</p>
+    <p><b>Nighttime only.</b> Only incidents from 8 PM to 6 AM (by the incident timestamp) are counted &mdash; darkness is a nighttime condition, so daytime crime is excluded.</p>
     <p id="measured-outage"></p>
     <p><b>Geography.</b> H3 hexagons at resolution <span id="m_res"></span> &mdash; roughly a few blocks apiece. Cells with no events are not drawn.</p>
     <table class="meta-table" id="m_table"></table></div></details>
@@ -148,7 +147,7 @@ async function loadCity(dir){
   if(geo){map.removeLayer(geo);geo=null;}
   if(chronicLayer){map.removeLayer(chronicLayer);chronicLayer=null;} CHRONIC=null;
   if(searchMarker){searchMarker.remove();searchMarker=null;}
-  mode="bv"; nightOnly=true; $("includeday").checked=false;
+  mode="bv"; nightOnly=true;
   document.querySelectorAll(".toggle button").forEach(x=>x.classList.toggle("active",x.dataset.mode==="bv"));
   const j=await (await fetch(dir+"/hexes.geojson")).json();
   META=j.meta;
@@ -166,7 +165,6 @@ $("cityTabs").innerHTML=DIRS.map(([d,n])=>`<button data-dir="${d}">${n}</button>
 $("cityTabs").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>loadCity(b.dataset.dir)));
 document.querySelectorAll(".toggle button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".toggle button").forEach(x=>x.classList.remove("active"));b.classList.add("active");mode=b.dataset.mode;if(geo)geo.setStyle(f=>styleFor(f.properties));}));
 $("showchronic").addEventListener("change",e=>{if(e.target.checked){if(!chronicLayer)chronicLayer=buildChronic();if(chronicLayer)chronicLayer.addTo(map);}else if(chronicLayer)map.removeLayer(chronicLayer);});
-$("includeday").addEventListener("change",e=>{nightOnly=!e.target.checked;if(geo){geo.setStyle(f=>styleFor(f.properties));geo.eachLayer(l=>l.setTooltipContent(tip(l.feature.properties)));}if(META)renderMeta(META);});
 
 // search (Photon)
 function inCity(la,lo){const g=C.geoBox;return la>=g.s&&la<=g.n&&lo>=g.w&&lo<=g.e;}

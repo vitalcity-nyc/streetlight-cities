@@ -91,10 +91,6 @@
     <button data-mode="light">Outage complaints</button>
     <button data-mode="crime">Crime</button>
   </div>
-  <label class="night-toggle" title="When checked, includes daytime crime alongside the night-only default">
-    <input type="checkbox" id="includeday">
-    <span>Include daytime crime <span class="muted">(default: night only, 8 PM &ndash; 6 AM)</span></span>
-  </label>
   <label class="night-toggle" title="Overlay the top 20 streetlight 311 complaint hotspots">
     <input type="checkbox" id="showchronic">
     <span>Show top 20 chronic complaint spots</span>
@@ -111,7 +107,7 @@
     <summary>What's being measured</summary>
     <div class="body">
       <p id="measured-crime"></p>
-      <p><b>Default is night only</b> (8 PM &ndash; 6 AM by the incident timestamp). Use the toggle above to add daytime crime back in.</p>
+      <p><b>Nighttime only.</b> Only incidents from 8 PM to 6 AM (by the incident timestamp) are counted &mdash; darkness is a nighttime condition, so daytime crime is excluded.</p>
       <p id="measured-outage"></p>
       <p><b>Geography.</b> H3 hexagons at resolution <span id="m_res"></span> &mdash; roughly a few blocks apiece. Cells with no events are not drawn.</p>
       <table class="meta-table" id="m_table"></table>
@@ -314,11 +310,6 @@ fetch("chronic.json").then(r=>r.json()).then(j => { CHRONIC = j; });
 document.getElementById("showchronic").addEventListener("change", e => {
   if (e.target.checked) { if (!chronicLayer) chronicLayer = buildChronicLayer(); if (chronicLayer) chronicLayer.addTo(map); }
   else if (chronicLayer) map.removeLayer(chronicLayer);
-});
-document.getElementById("includeday").addEventListener("change", e => {
-  nightOnly = !e.target.checked;
-  if (geo) { geo.setStyle(f => styleFor(f.properties)); geo.eachLayer(l => l.setTooltipContent(tipHtml(l.feature.properties))); }
-  if (META) renderMeta(META);
 });
 
 // Address search — Photon (komoot), biased to the city, clamped to its bbox.

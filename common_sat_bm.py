@@ -135,11 +135,14 @@ def build(city_dir, *, year, lighting_label):
         if f["_rad"] is not None:
             rad.append(f["_rad"])
 
-    # --- percentile model, echoing the NYC satellite tool ---------------------
+    # --- percentile model -----------------------------------------------------
     # lighting percentile: 0 = darkest, 100 = brightest (radiance, ascending).
-    # crime percentile:    0 = lowest,  100 = highest (total violent crime count).
+    # crime percentile:    0 = lowest, 100 = highest. NIGHT-ONLY violent crime
+    # (8 PM-6 AM) — darkness is a nighttime condition, so daytime crime is excluded.
+    def night_count(p_):
+        return p_.get("crime_night_n", p_.get("crime_n", 0))
     rad_sorted = sorted(rad)
-    crime_sorted = sorted(p_["crime_n"] for p_ in (f["properties"] for f in feats))
+    crime_sorted = sorted(night_count(f["properties"]) for f in feats)
 
     def pctl(sorted_vals, v):
         if v is None or not sorted_vals:
@@ -154,20 +157,23 @@ def build(city_dir, *, year, lighting_label):
     out = []
     for f in feats:
         p = f["properties"]
+        nc = night_count(p)
         out.append({"type": "Feature", "geometry": f["geometry"], "properties": {
             "light_n": None if f["_rad"] is None else round(f["_rad"], 1),
             "light_pctl": pctl(rad_sorted, f["_rad"]),
-            "crime_n": p["crime_n"],
-            "crime_pctl": pctl(crime_sorted, p["crime_n"]),
+            "crime_n": nc,                              # night-only violent crime count
+            "crime_pctl": pctl(crime_sorted, nc),
             "nta": p.get("nta"), "boro": p.get("boro")}})
 
     meta = dict(src["meta"]); meta.pop("outages", None)
     meta["generated"] = datetime.date.today().isoformat()
     meta.pop("class_counts", None)
     meta["n_cells"] = len(out)
+    meta["crime"]["time_of_day"] = "night only (8 PM - 6 AM)"
     meta["percentile_method"] = ("Each cell gets a lighting percentile (satellite radiance, 0 = darkest) "
-                                 "and a violent-crime percentile (0 = lowest); the sliders flag cells "
-                                 "at or below a lighting percentile AND at or above a crime percentile")
+                                 "and a NIGHTTIME violent-crime percentile (8 PM-6 AM, 0 = lowest); the "
+                                 "sliders flag cells at or below a lighting percentile AND at or above a "
+                                 "crime percentile")
     meta["lightingQ"] = quantiles(rad_sorted)
     meta["crimeQ"] = quantiles(crime_sorted)
     meta["lighting"] = {"label": lighting_label, "year": year,
