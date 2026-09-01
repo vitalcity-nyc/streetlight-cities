@@ -262,9 +262,9 @@ const map = L.map('map', { zoomControl:false, preferCanvas:true, maxBounds:BOUND
 const hashP = new URLSearchParams(location.hash.slice(1));
 let lPct = Number(hashP.get('l')) || 50, cPct = Number(hashP.get('c')) || 80;
 map.setView(C.center, C.zoom);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
 map.createPane('labels'); map.getPane('labels').style.zIndex=450; map.getPane('labels').style.pointerEvents='none';
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',{maxZoom:19,pane:'labels'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638',{maxZoom:19,pane:'labels'}).addTo(map);
 
 /* ---- helpers ---- */
 function rankLabel(pct, type) {

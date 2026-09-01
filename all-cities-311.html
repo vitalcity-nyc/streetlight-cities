@@ -105,9 +105,9 @@ const PALETTE = {"0-0":"#3b3b44","0-1":"#3f6b78","0-2":"#3fa9b9","1-0":"#7a4756"
 const map = L.map("map",{zoomControl:false,preferCanvas:true,zoomSnap:0.5,zoomDelta:0.5});
 map.setView([39.5,-95],4); // init panes/renderer before async city load
 L.control.zoom({position:"topright"}).addTo(map);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638",{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
 map.createPane("labels"); map.getPane("labels").style.zIndex=450; map.getPane("labels").style.pointerEvents="none";
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",{maxZoom:19,pane:"labels"}).addTo(map);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638",{maxZoom:19,pane:"labels"}).addTo(map);
 
 (function(){const el=$("legend");el.innerHTML="";[2,1,0].forEach((r,ri)=>{const yl=document.createElement("div");yl.className="legend-y";yl.textContent=ri===0?"More crime →":"";el.appendChild(yl);[0,1,2].forEach(c=>{const cell=document.createElement("div");cell.className="legend-cell";cell.style.background=PALETTE[`${r}-${c}`];el.appendChild(cell);});});el.appendChild(document.createElement("div"));const xl=document.createElement("div");xl.className="legend-x";xl.textContent="More outages →";el.appendChild(xl);})();
 

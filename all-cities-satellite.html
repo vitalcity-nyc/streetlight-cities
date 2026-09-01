@@ -125,9 +125,9 @@ const PALETTE={"0-0":"#3b3b44","0-1":"#3f6b78","0-2":"#3fa9b9","1-0":"#7a4756","
 const map=L.map("map",{zoomControl:false,preferCanvas:true,zoomSnap:0.5,zoomDelta:0.5});
 map.setView([39.5,-95],4); // init panes/renderer before async city load
 L.control.zoom({position:"topright"}).addTo(map);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638",{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
 map.createPane("labels");map.getPane("labels").style.zIndex=450;map.getPane("labels").style.pointerEvents="none";
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",{maxZoom:19,pane:"labels"}).addTo(map);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=cb1_2r82_1_ae4e70b6166057bc41b89638",{maxZoom:19,pane:"labels"}).addTo(map);
 
 let C,geo,mode="overlap",META,FEATS=[],lPct=50,cPct=80,chronicLayer=null,CHRONIC=null,searchMarker,TOUR=[],tourIdx=-1,curDir;
 function rankLabel(p,t){if(p==null)return null;if(t==="crime"){if(p>=95)return{t:"Top 5%",c:"#d2232a"};if(p>=90)return{t:"Top 10%",c:"#ff7c53"};if(p>=75)return{t:"Top 25%",c:"#f69577"};if(p>=50)return{t:"Above median",c:"#fabcaa"};return{t:"Below median",c:"#9b9fbc"};}if(p<=10)return{t:"Very dark",c:"#394882"};if(p<=25)return{t:"Dark",c:"#4e98cb"};if(p<=50)return{t:"Below median",c:"#9b9fbc"};return{t:"Well lit",c:"#dde44c"};}
